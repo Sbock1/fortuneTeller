@@ -71,7 +71,7 @@ def load_daily_stock_prices():
 #gil.update_first_row()
 
 load_overview(50)
-#load_income_annual(40)
+#load_income_annual(60)
 #load_balance_annual(230)
 
 #load_daily_stock_prices()
