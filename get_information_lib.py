@@ -6,32 +6,29 @@ import time
 import yfinance as yf
 from openpyxl import load_workbook
 
-API_key="HNNMDBOG55BREC5P"
-time_delay = 18
-fd = FundamentalData(API_key,output_format='pandas')
+################################################################## 
+# Global variables based on API requirements
+API_key="HNNMDBOG55BREC5P" #Account API key to validate access
+time_delay = 18 #Can only laod on dataset per 18 seconds
+FundamentalDataPull = FundamentalData(API_key,output_format='pandas')
+##################################################################
 
 
-def stock_transform(stock1): 
-    stock_list = []
-
-    for elem in range(len(stock1.iloc[:][2])):
-        stock_list.append(stock1.iloc[elem][2])
-    return stock_list
-
-##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
+"""##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
 def update_first_row():
     columns = fd.get_company_overview("MSFT")[0].columns
     
     df = pd.DataFrame(columns=[columns])
     df.to_excel("output.xlsx", sheet_name="Overview")
+"""
+def load_stock_symbol_list(filename):
+    stock_list = pd.read_excel(filename, usecols="A", header=None)
+    #stock_list = stock_list.dropna()
+    #stock_list_new = []
+    #stock_list_new = stock_transform(stock_list)   
+    return stock_list
 
-def get_stock_symbol_list():
-    stock_list = pd.read_excel("Stock_symbols.xlsx", usecols="C", header=None)
-    stock_list = stock_list.dropna()
-    stock_list_new = []
-    stock_list_new = stock_transform(stock_list)   
-    return stock_list_new
-
+"""
 def get_output_data_to_pandas(filename, sheetname):
     excel_data = pd.read_excel(filename, sheetname)
     excel_symbol_output = list(excel_data["Symbol"])
@@ -336,5 +333,5 @@ def calc_price_per_share():
                 multipliers["SharePrice"][pos] = table_pri["Price"][table_pri["Symbol"]==elem].values[0]
     
     return multipliers
-    
+"""
    

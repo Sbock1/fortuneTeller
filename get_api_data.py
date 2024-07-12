@@ -11,7 +11,7 @@ import time
 #Stock symbols are downloaded separately, then the next request downlaods the data to that stock symbols and checks if symobls are still listed
 
 def load_overview(amount):
-    stock_list_new = gil.get_stock_symbol_list()
+    stock_list_new = gil.load_stock_symbol_list()
     excel_data_ov, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Overview")
     print("Step1-Done")
     check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
@@ -21,7 +21,7 @@ def load_overview(amount):
     gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_overv)
 
 def load_balance_quartely(amount):
-    stock_list_new = gil.get_stock_symbol_list()
+    stock_list_new = gil.load_stock_symbol_list()
     excel_data_bal, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Balance")
     check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
     excel_data_up_bal, not_updatable_bal = gil.update_balance_sheet_quarterly(excel_data_bal, update_list[0:amount])
@@ -30,7 +30,7 @@ def load_balance_quartely(amount):
     gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_bal)
 
 def load_balance_annual(amount):
-    stock_list_new = gil.get_stock_symbol_list()
+    stock_list_new = gil.load_stock_symbol_list()
     excel_data_bal, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Balance")
     check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
     excel_data_up_bal, not_updatable_bal = gil.update_balance_sheet_annual(excel_data_bal, update_list[0:amount])
@@ -39,7 +39,7 @@ def load_balance_annual(amount):
     gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_bal)
 
 def load_income_quartely(amount):
-    stock_list_new = gil.get_stock_symbol_list()
+    stock_list_new = gil.load_stock_symbol_list()
     excel_data_inc, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Income")
     check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
     excel_data_up_inc, not_updatable_inc = gil.update_income_statement_quarterly(excel_data_inc, update_list[0:amount])
@@ -48,7 +48,7 @@ def load_income_quartely(amount):
     gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_inc)
 
 def load_income_annual(amount):
-    stock_list_new = gil.get_stock_symbol_list()
+    stock_list_new = gil.load_stock_symbol_list()
     excel_data_inc, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Income")
     check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
     excel_data_up_inc, not_updatable_inc = gil.update_income_statement_annual(excel_data_inc, update_list[0:amount])
@@ -59,7 +59,7 @@ def load_income_annual(amount):
 
 
 def load_daily_stock_prices():
-    stock_list_new = gil.get_stock_symbol_list()
+    stock_list_new = gil.load_stock_symbol_list()
     stock_list_con = " ".join(str(elem) for elem in stock_list_new)
 
     daily_price_stock_list = gil.load_stock_price_yf(stock_list_con)
