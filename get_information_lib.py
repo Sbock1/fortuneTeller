@@ -10,7 +10,13 @@ from openpyxl import load_workbook
 # Global variables based on API requirements
 API_key="HNNMDBOG55BREC5P" #Account API key to validate access
 time_delay = 18 #Can only laod on dataset per 18 seconds
-FundamentalDataPull = FundamentalData(API_key,output_format='pandas')
+FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
+# IMPORTANT:
+# The AlphaVantage API documentation can be found here:
+# https://www.alphavantage.co/documentation/
+# 
+
+
 ##################################################################
 
 
@@ -21,12 +27,20 @@ def update_first_row():
     df = pd.DataFrame(columns=[columns])
     df.to_excel("output.xlsx", sheet_name="Overview")
 """
-def load_stock_symbol_list(filename):
-    stock_list = pd.read_excel(filename, usecols="A", header=None)
-    #stock_list = stock_list.dropna()
-    #stock_list_new = []
-    #stock_list_new = stock_transform(stock_list)   
-    return stock_list
+# Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
+def loadOneColumnRowDataAsList(filename, sheetname, column):
+    stockSymbolList = pd.read_excel(filename, sheet_name=sheetname, usecols=column, header=None, index_col=0) #Read column A / No header - Take first row NOT as replacement header / No index / returns Dataframe
+    stockSymbolList = stockSymbolList.index.tolist() # Convert Dataframe to list in order for easier processing later / use index as the column A is seen as index column
+    return stockSymbolList
+
+# Compare mainList and deleteList, delete the items in mainList, which are not in deleteList, and return modified mainList
+# Compare mainList and addList, add the items to mainList, which are in addList, and return modified mainList
+# The goal of the function is helping with having a uptodate SymbolList
+def compare(mainList, deleteList, addList):
+    mainList1 = [item for item in mainList if item not in deleteList]
+    mainList2 = [item for item in mainList if item in mainList or addList]
+
+    return mainList1, mainList2
 
 """
 def get_output_data_to_pandas(filename, sheetname):
@@ -54,29 +68,57 @@ def search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output):
             update_list.append(symbol)
             
     return check_list, refresh_list, update_list
+"""
+def APIRequestDelay():
+    time.sleep(time_delay)
 
-def update_company_overview(excel_data, update_list):
+    return None
+
+def timestampToday():
+    # Get the current day
     today = pd.to_datetime(dt.datetime.today())
-    today_quarter = int(today.quarter)
-    not_updatable = []
+
+    return today
+
+def timestampQuarter():
+    # Get the current quarter
+    today = pd.to_datetime(dt.datetime.today())
+    currentQuarter = int(today.quarter)
+
+    return currentQuarter
+
+def identifyLastColumnWithContents(DataFrame):
+    # To identify the last column, the DataFrame is given as input, than it is check which cells hold at not a NaN value
+    # than the columns with at least one not NaN value are marked true. The last one of these is the output translated into a number,
+    # this number is returned by this function.
+    lastColumnWithContentsName = DataFrame.notna().any().index[-1]
+    lastColumnWithContentsNumber = DataFrame.columns.get_loc(lastColumnWithContentsName)
+
+    return lastColumnWithContentsNumber
+
+
+def updateCompanyOverview(excel_data, update_list):
+    stocksNotExisting = []
     counter = 0
+
     for elem in update_list:
         try:
-            stock1 = fd.get_company_overview(elem)[0]
-            ##The insert coulum may change based on the output of the API -> TO_DO: Implement error check 
-            stock1.insert(46, "Downloaded_at", pd.to_datetime(dt.datetime.today()))
-            stock1.insert(47, "Downloaded_quarter", today_quarter)
-            excel_data = pd.concat([excel_data, stock1], ignore_index=True)
-            time.sleep(time_delay)
+            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            stockOverviewData = FundamentalDataAPIPull.get_company_overview(elem)[0] 
+            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
+            stockOverviewData.insert(identifyLastColumnWithContents + 1, "Downloaded_at_day", timestampToday())
+            stockOverviewData.insert(identifyLastColumnWithContents + 2, "Downloaded_at_quarter", timestampQuarter())
+            excel_data = pd.concat([excel_data, stockOverviewData], ignore_index=True)
+            APIRequestDelay()
         except ValueError:
-            not_updatable.append(elem)
+            stocksNotExisting.append(elem)
             print("Error" + str(counter) + " " + str(elem))
             counter = counter + 1
-            time.sleep(time_delay)
+            APIRequestDelay()
             pass
     
-    return excel_data, not_updatable
-
+    return excel_data, stocksNotExisting
+"""
 def update_balance_sheet_quarterly(excel_data, update_list):
     today = pd.to_datetime(dt.datetime.today())
     today_quarter = int(today.quarter)
