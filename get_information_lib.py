@@ -9,70 +9,88 @@ from openpyxl import load_workbook
 ################################################################## 
 # Global variables based on API requirements
 API_key="HNNMDBOG55BREC5P" #Account API key to validate access
-time_delay = 18 #Can only laod on dataset per 18 seconds
+time_delay = 18 #The free API access only allows a request every 18 seconds, therefore a timedelay is defined
 FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
 # IMPORTANT:
 # The AlphaVantage API documentation can be found here:
 # https://www.alphavantage.co/documentation/
-# 
-
-
 ##################################################################
 
+# Global variables
+# These are the two document which form the basis of the software
+# mainExcel = pd.read_excel("Output.xlsx", sheet_name="Overview")
+#stockSymbolList = pd.read_excel("Stock_symbols_list.xlsx")
 
-"""##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
-def update_first_row():
-    columns = fd.get_company_overview("MSFT")[0].columns
-    
-    df = pd.DataFrame(columns=[columns])
-    df.to_excel("output.xlsx", sheet_name="Overview")
-"""
+
+##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
+def insertFirstRowColumnNames():
+    headerColumns = FundamentalDataAPIPull.get_company_overview("MSFT")[0].columns
+
+    df = pd.DataFrame(columns=headerColumns)
+    df.to_excel("output.xlsx", sheet_name="Overview", index=False)
+
+
 # Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
 def loadOneColumnRowDataAsList(filename, sheetname, column):
-    stockSymbolList = pd.read_excel(filename, sheet_name=sheetname, usecols=column, header=None, index_col=0) #Read column A / No header - Take first row NOT as replacement header / No index / returns Dataframe
-    stockSymbolList = stockSymbolList.index.tolist() # Convert Dataframe to list in order for easier processing later / use index as the column A is seen as index column
-    return stockSymbolList
+    listFromColumn = pd.read_excel(filename, sheet_name=sheetname, usecols=column, header=None, index_col=0) #Read column A / No header - Take first row NOT as replacement header / No index / returns Dataframe
+    listFromColumn = listFromColumn.index.tolist() # Convert Dataframe to list in order for easier processing later / use index as the column A is seen as index column
+    return listFromColumn
+
 
 # Compare mainList and deleteList, delete the items in mainList, which are not in deleteList, and return modified mainList
 # Compare mainList and addList, add the items to mainList, which are in addList, and return modified mainList
 # The goal of the function is helping with having a uptodate SymbolList
-def compare(mainList, deleteList, addList):
-    mainList1 = [item for item in mainList if item not in deleteList]
-    mainList2 = [item for item in mainList if item in mainList or addList]
-
-    return mainList1, mainList2
-
-"""
-def get_output_data_to_pandas(filename, sheetname):
-    excel_data = pd.read_excel(filename, sheetname)
-    excel_symbol_output = list(excel_data["Symbol"])
-    excel_quarter_output = list(excel_data["Downloaded_quarter"])
+def compareDeleteAddListWithMainList(mainList, deleteList=None, addList=None):
+    if deleteList == None:
+        deleteList = []
+    if addList == None:
+        addList =[]
     
-    return excel_data, excel_symbol_output, excel_quarter_output
+    # KEEP IN MIND: First the deletion is done, THEN the addition!
+    mainList = [item for item in mainList if item not in deleteList]
+    mainList.extend([item for item in addList if item not in mainList])
+    mainList.sort()
 
-def search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output):
-    check_list = []
-    refresh_list = []
-    update_list = []
-    today = pd.to_datetime(dt.datetime.today())
-    today_quarter = int(today.quarter)
+    return mainList
 
-    for symbol in stock_list_new:
-        if symbol in excel_symbol_output:
-            pos = excel_symbol_output.index(symbol)
-            if today_quarter == excel_quarter_output[pos]:
-                check_list.append(symbol+" " +  str(today_quarter) +" okay")
+
+def excelReadWrite():
+
+
+    return None
+
+
+def getExcelSheetInformation(filename, sheetname):
+    mainSheetDataframe = pd.read_excel(filename, sheetname)
+    excelSymbolsExisting = list(mainSheetDataframe["Symbol"])
+    excelQuartersExisting = list(mainSheetDataframe["Downloaded_quarter"])
+    
+    return mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting
+
+
+def checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting):
+    existingSymbols = []
+    symbolsNeedRefresh = []
+    updateNotExistingSymbols = []
+    
+    for symbol in symbolList:
+        if symbol in excelSymbolsExisting:
+            rowOnWorksheet = excelSymbolsExisting.index(symbol)
+            if timestampQuarter() == excelQuartersExisting[rowOnWorksheet]:
+                existingSymbols.append(symbol + " in" + str(timestampQuarter()) +" uptodate")
             else:
-                refresh_list.append(symbol)
+                symbolsNeedRefresh.append([symbol, rowOnWorksheet])
         else:
-            update_list.append(symbol)
+            updateNotExistingSymbols.append(symbol)
             
-    return check_list, refresh_list, update_list
-"""
+    return existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols
+
+
 def APIRequestDelay():
     time.sleep(time_delay)
 
     return None
+
 
 def timestampToday():
     # Get the current day
@@ -80,12 +98,14 @@ def timestampToday():
 
     return today
 
+
 def timestampQuarter():
     # Get the current quarter
     today = pd.to_datetime(dt.datetime.today())
     currentQuarter = int(today.quarter)
 
     return currentQuarter
+
 
 def identifyLastColumnWithContents(DataFrame):
     # To identify the last column, the DataFrame is given as input, than it is check which cells hold at not a NaN value
@@ -97,7 +117,7 @@ def identifyLastColumnWithContents(DataFrame):
     return lastColumnWithContentsNumber
 
 
-def updateCompanyOverview(excel_data, update_list):
+def updateCompanyOverview(mainExcel, update_list):
     stocksNotExisting = []
     counter = 0
 
@@ -106,9 +126,9 @@ def updateCompanyOverview(excel_data, update_list):
             #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockOverviewData = FundamentalDataAPIPull.get_company_overview(elem)[0] 
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
-            stockOverviewData.insert(identifyLastColumnWithContents + 1, "Downloaded_at_day", timestampToday())
-            stockOverviewData.insert(identifyLastColumnWithContents + 2, "Downloaded_at_quarter", timestampQuarter())
-            excel_data = pd.concat([excel_data, stockOverviewData], ignore_index=True)
+            stockOverviewData.insert(identifyLastColumnWithContents(stockOverviewData) + 1, "Downloaded_at_day", timestampToday())
+            #stockOverviewData.insert(identifyLastColumnWithContents(stockOverviewData) + 2, "Downloaded_at_quarter", timestampQuarter())
+            mainExcel = pd.concat([mainExcel, stockOverviewData], ignore_index=True)
             APIRequestDelay()
         except ValueError:
             stocksNotExisting.append(elem)
@@ -117,7 +137,7 @@ def updateCompanyOverview(excel_data, update_list):
             APIRequestDelay()
             pass
     
-    return excel_data, stocksNotExisting
+    return mainExcel, stocksNotExisting
 """
 def update_balance_sheet_quarterly(excel_data, update_list):
     today = pd.to_datetime(dt.datetime.today())

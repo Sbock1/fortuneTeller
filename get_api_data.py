@@ -1,25 +1,18 @@
 import get_information_lib as gil
 import time
-
-#print("Do you want to load the latest Stock Prices from today from Yahoo Finance? Press Y or N\n")
-#load_stock_price = input()
-#if len(load_stock_price) >= 2:
-#    print("You have provided to many letters")
-    
-
-    
-#Stock symbols are downloaded separately, then the next request downlaods the data to that stock symbols and checks if symobls are still listed
+ 
 
 def load_overview(amount):
-    stock_list_new = gil.load_stock_symbol_list()
-    excel_data_ov, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Overview")
-    print("Step1-Done")
-    check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
-    excel_data_overv, not_updatable_overv = gil.update_company_overview(excel_data_ov, update_list[0:amount])
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
+    print("Step 1: Loading initial data from Excel-> Done")
+    existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
+    mainExcel, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
     
-    gil.write_to_excel_update_overview(excel_data_overv)
-    gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_overv)
+    gil.write_to_excel_update_overview(mainExcel)
+    gil.delete_not_upgradable_symbols(symbolList, stocksNotExisting)
 
+'''
 def load_balance_quartely(amount):
     stock_list_new = gil.load_stock_symbol_list()
     excel_data_bal, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Balance")
@@ -69,6 +62,7 @@ def load_daily_stock_prices():
 
 
 #gil.update_first_row()
+'''
 
 load_overview(50)
 #load_income_annual(60)
