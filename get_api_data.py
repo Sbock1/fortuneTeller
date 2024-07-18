@@ -3,14 +3,15 @@ import time
  
 
 def load_overview(amount):
-    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
-    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
+    #gil.insertFirstRowColumnNames()
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Tabelle1", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Tabelle1")
     print("Step 1: Loading initial data from Excel-> Done")
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
     mainExcel, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
-    
-    gil.write_to_excel_update_overview(mainExcel)
-    gil.delete_not_upgradable_symbols(symbolList, stocksNotExisting)
+    print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
+    gil.writeToExcelToUpdateOverview(mainExcel)
+    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 '''
 def load_balance_quartely(amount):
@@ -64,7 +65,7 @@ def load_daily_stock_prices():
 #gil.update_first_row()
 '''
 
-load_overview(50)
+load_overview(1)
 #load_income_annual(60)
 #load_balance_annual(230)
 

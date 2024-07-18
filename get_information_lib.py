@@ -4,7 +4,8 @@ import numpy as np
 import datetime as dt
 import time
 import yfinance as yf
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 
 ################################################################## 
 # Global variables based on API requirements
@@ -24,10 +25,14 @@ FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
 
 ##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
 def insertFirstRowColumnNames():
-    headerColumns = FundamentalDataAPIPull.get_company_overview("MSFT")[0].columns
+    firstRowData = FundamentalDataAPIPull.get_company_overview("A")[0]
 
-    df = pd.DataFrame(columns=headerColumns)
-    df.to_excel("output.xlsx", sheet_name="Overview", index=False)
+    df = pd.DataFrame(data=firstRowData)
+    # Adding of additional columns at the end
+    df["Downloaded_at_datetime"] = None
+    df["Downloaded_at_quarter"] = None
+
+    df.to_excel("output.xlsx", sheet_name="Tabelle1", index=False)
 
 
 # Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
@@ -54,21 +59,22 @@ def compareDeleteAddListWithMainList(mainList, deleteList=None, addList=None):
     return mainList
 
 
-def excelReadWrite():
-
-
-    return None
-
-
 def getExcelSheetInformation(filename, sheetname):
     mainSheetDataframe = pd.read_excel(filename, sheetname)
+
+
     excelSymbolsExisting = list(mainSheetDataframe["Symbol"])
-    excelQuartersExisting = list(mainSheetDataframe["Downloaded_quarter"])
+    excelQuartersExisting = list(mainSheetDataframe["Downloaded_at_quarter"])
     
     return mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting
 
 
 def checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting):
+    # This func checks three things:
+    # 1. Which symbols (stocks) are already in the main excel written
+    # 2. Which symbols are already in the main excel existing, but the download quarter is old, and they needRefresh
+    # 3. Which symbols do not exist anymore, meaning which companies are not longer on the stock exchange registered
+    # This func does not eliminate any stock from the main stock list, but it gives the information to Writer functions
     existingSymbols = []
     symbolsNeedRefresh = []
     updateNotExistingSymbols = []
@@ -93,8 +99,8 @@ def APIRequestDelay():
 
 
 def timestampToday():
-    # Get the current day
-    today = pd.to_datetime(dt.datetime.today())
+    # Get the current datetime
+    today = pd.to_datetime(dt.datetime.now())
 
     return today
 
@@ -102,7 +108,7 @@ def timestampToday():
 def timestampQuarter():
     # Get the current quarter
     today = pd.to_datetime(dt.datetime.today())
-    currentQuarter = int(today.quarter)
+    currentQuarter = (today.month - 1) // 3 + 1
 
     return currentQuarter
 
@@ -117,17 +123,25 @@ def identifyLastColumnWithContents(DataFrame):
     return lastColumnWithContentsNumber
 
 
-def updateCompanyOverview(mainExcel, update_list):
+def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
     stocksNotExisting = []
     counter = 0
 
-    for elem in update_list:
+    for elem in updateNotExistingSymbols:
         try:
             #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockOverviewData = FundamentalDataAPIPull.get_company_overview(elem)[0] 
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
-            stockOverviewData.insert(identifyLastColumnWithContents(stockOverviewData) + 1, "Downloaded_at_day", timestampToday())
-            #stockOverviewData.insert(identifyLastColumnWithContents(stockOverviewData) + 2, "Downloaded_at_quarter", timestampQuarter())
+            stockOverviewData["Downloaded_at_datetime"] = timestampToday()
+            stockOverviewData["Downloaded_at_quarter"] = timestampQuarter()
+
+            # Check and if not Dataframe datatype, convert to Dataframe
+            if not isinstance(stockOverviewData, pd.DataFrame):
+                stockOverviewData = pd.DataFrame([stockOverviewData])
+
+            # Make sure the columns are in the same order
+            stockOverviewData = stockOverviewData.reindex(columns=mainExcel.columns)
+
             mainExcel = pd.concat([mainExcel, stockOverviewData], ignore_index=True)
             APIRequestDelay()
         except ValueError:
@@ -265,23 +279,13 @@ def load_stock_price_yf(stock_list_new):
     stock_price_df_t1.columns = ["Symbol","Price","Date"]
     
     return stock_price_df_t1
-
+"""
            
-def write_to_excel_update_overview(excel_data):
-    book = load_workbook("output.xlsx")
-    book_sheet = book["Overview"]
-   
-      
-    writer = pd.ExcelWriter("output.xlsx", engine='openpyxl') 
-
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-
-    excel_data.to_excel(writer, index=False, sheet_name="Overview")
-
-    writer.save()    
+def writeToExcelToUpdateOverview(mainExcel):
+    mainExcel.to_excel("output.xlsx", sheet_name="Tabelle1", index=False)
 
 
+"""
 def write_to_excel_update_balance(excel_data):
     book = load_workbook("output.xlsx")
     book_sheet = book["Balance"]
@@ -321,13 +325,15 @@ def write_to_excel_daily_stock_price(result):
   
     result.to_excel(writer, index=False, header=True, sheet_name="Daily_Stock_Price")
     writer.save() 
-    
-def delete_not_upgradable_symbols(stock_list_new, not_updatable):
+
+"""
+
+def deleteNoneUpdatableSymbols(stock_list_new, not_updatable):
     
     for elem in not_updatable:
         stock_list_new.remove(elem)
 
-    book = load_workbook("Stock_symbols.xlsx")
+    book = load_workbook("Stock_symbols_list.xlsx")
     book_sheet = book["Tabelle1"]
     book_sheet.delete_cols(idx=2)
 
@@ -341,6 +347,8 @@ def delete_not_upgradable_symbols(stock_list_new, not_updatable):
     df.to_excel(writer, startcol=2, index=False, sheet_name="Tabelle1", header=False, )
 
     writer.save()    
+
+"""
 
 def prep_df_for_calc(df_to_prep):
     df_to_prep = df_to_prep.dropna()
