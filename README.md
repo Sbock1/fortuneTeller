@@ -1,6 +1,6 @@
 # fortuneTeller
 
-**Goal of the project: **
+**Goal of the project:**
 Create a stock forecast model that takes into account:
 1. Module: Fundamental Stock Data
 2. Module: Sentiment Data
