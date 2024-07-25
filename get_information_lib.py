@@ -328,25 +328,17 @@ def write_to_excel_daily_stock_price(result):
 
 """
 
-def deleteNoneUpdatableSymbols(stock_list_new, not_updatable):
-    
-    for elem in not_updatable:
-        stock_list_new.remove(elem)
+def deleteNoneUpdatableSymbols(symbol_list, stocksNotExisting):
+    filename = "Stock_symbols_list"
+    sheetname = "Tabelle1"
+     
+    # Compare symbol list against stocks not existing anymore at the stock exchange list
+    filtered_symbols = [symbol for symbol in symbol_list not in stocksNotExisting]
 
-    book = load_workbook("Stock_symbols_list.xlsx")
-    book_sheet = book["Tabelle1"]
-    book_sheet.delete_cols(idx=2)
+    excelDataFrame = pd.DataFrame(filtered_symbols, columns=[0])
 
-    df = pd.DataFrame(stock_list_new)
-    
-    writer = pd.ExcelWriter("Stock_symbols.xlsx", engine='openpyxl') 
+    excelDataFrame.to_excel(filename, sheet_name=sheetname, index=False, header=False)
 
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-
-    df.to_excel(writer, startcol=2, index=False, sheet_name="Tabelle1", header=False, )
-
-    writer.save()    
 
 """
 
