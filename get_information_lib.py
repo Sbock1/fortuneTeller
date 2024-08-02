@@ -6,6 +6,7 @@ import time
 import yfinance as yf
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
+import tkinter as tk
 
 ################################################################## 
 # Global variables based on API requirements
@@ -26,13 +27,25 @@ FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
 ##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
 def insertFirstRowColumnNames():
     firstRowData = FundamentalDataAPIPull.get_company_overview("A")[0]
-
-    df = pd.DataFrame(data=firstRowData)
+    df = pd.read_excel("output.xlsx", sheet_name="Overview")
+    df = df.append(firstRowData, ignore_index=True)    
     # Adding of additional columns at the end
-    df["Downloaded_at_datetime"] = None
-    df["Downloaded_at_quarter"] = None
+    df["Downloaded_at_datetime"] = timestampToday()
+    df["Downloaded_at_quarter"] = timestampQuarter()
 
-    df.to_excel("output.xlsx", sheet_name="Tabelle1", index=False)
+    df.to_excel("output.xlsx", sheet_name="Overview", index=False)
+
+def insertFirstRowColumnNamesBalance():
+    firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly("A")[0]
+    new_df = pd.DataFrame([firstRowData])
+    # Adding of additional columns at the end
+    new_df["Downloaded_at_datetime"] = timestampToday()
+    new_df["Downloaded_at_quarter"] = timestampQuarter()
+    
+    
+
+   
+    new_df.to_excel("output.xlsx", sheet_name="Balance", index=False)
 
 
 # Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
@@ -152,32 +165,39 @@ def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
             pass
     
     return mainExcel, stocksNotExisting
-"""
-def update_balance_sheet_quarterly(excel_data, update_list):
-    today = pd.to_datetime(dt.datetime.today())
-    today_quarter = int(today.quarter)
-    not_updatable = []
+
+def update_balance_sheet_quarterly(mainExcel, update_list):
+    stocksNotExisting = []
     counter = 0
+        
     for elem in update_list:
         try:
-            stock1 = fd.get_balance_sheet_quarterly(elem)[0]
-            if len(stock1.columns) >= 38:
-                stock1.insert(0, "Symbol", elem)
-                stock1.insert(39, "Downloaded_at", pd.to_datetime(dt.datetime.today()))
-                stock1.insert(40, "Downloaded_quarter", today_quarter)
-                excel_data = pd.concat([excel_data, stock1], ignore_index=True)
-                time.sleep(18)
-            else:
-                not_updatable.append(elem)
+            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            stockBalanceData = FundamentalDataAPIPull.get_balance_sheet_quarterly(elem)[0]
+            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
+            stockBalanceData["Downloaded_at_datetime"] = timestampToday()
+            stockBalanceData["Downloaded_at_quarter"] = timestampQuarter()
+            
+            # Check and if not Dataframe datatype, convert to Dataframe
+            if not isinstance(stockBalanceData, pd.DataFrame):
+                stockBalanceData = pd.DataFrame([stockBalanceData])
+
+            # Make sure the columns are in the same order
+            stockBalanceData = stockBalanceData.reindex(columns=mainExcel.columns)
+
+            stockBalanceData.insert(0, "Symbol", elem)
+            APIRequestDelay()
+            
         except ValueError:
-            not_updatable.append(elem)
+            update_list.append(elem)
             print("Error" + str(counter) + " " + str(elem))
             counter = counter + 1
-            time.sleep(time_delay)
+            APIRequestDelay()
             pass
     
-    return excel_data, not_updatable 
+    return mainExcel, update_list 
 
+"""
 def update_balance_sheet_annual(excel_data, update_list):
     today = pd.to_datetime(dt.datetime.today())
     today_quarter = int(today.quarter)
@@ -282,7 +302,7 @@ def load_stock_price_yf(stock_list_new):
 """
            
 def writeToExcelToUpdateOverview(mainExcel):
-    mainExcel.to_excel("output.xlsx", sheet_name="Tabelle1", index=False)
+    mainExcel.to_excel("output.xlsx", sheet_name="Overview", index=False)
 
 
 """
@@ -329,11 +349,11 @@ def write_to_excel_daily_stock_price(result):
 """
 
 def deleteNoneUpdatableSymbols(symbol_list, stocksNotExisting):
-    filename = "Stock_symbols_list"
-    sheetname = "Tabelle1"
+    filename = "Stock_symbols_list.xlsx"
+    sheetname = "Overview"
      
     # Compare symbol list against stocks not existing anymore at the stock exchange list
-    filtered_symbols = [symbol for symbol in symbol_list not in stocksNotExisting]
+    filtered_symbols = [symbol for symbol in symbol_list if symbol not in stocksNotExisting]
 
     excelDataFrame = pd.DataFrame(filtered_symbols, columns=[0])
 
@@ -396,4 +416,6 @@ def calc_price_per_share():
     
     return multipliers
 """
+
+
    

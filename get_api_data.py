@@ -1,11 +1,12 @@
 import get_information_lib as gil
 import time
- 
+import tkinter as tk
+from tkinter import messagebox
 
 def load_overview(amount):
-    #gil.insertFirstRowColumnNames()
+    
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Tabelle1", "A")
-    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Tabelle1")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
     print("Step 1: Loading initial data from Excel-> Done")
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
     mainExcel, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
@@ -13,16 +14,56 @@ def load_overview(amount):
     gil.writeToExcelToUpdateOverview(mainExcel)
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
-'''
+def createWindow():
+    # Main window
+    root = tk.Tk()
+    # Window title
+    root.title("Load data window")
+    # Fenstergröße setzen
+    root.geometry("400x300")
+    # Ein Label-Widget hinzufügen
+    label = tk.Label(root, text="You can decide how many stock overview data you want to download. Currently each row will take 18 seconds.")
+    label.pack(pady=20)  # Pack-Layout-Manager verwenden
+        
+    # Ein Button-Widget hinzufügen
+    def load_overview_button_clicked():
+        try:
+            amount = int(entry.get())
+            load_overview(amount)
+            messagebox.showinfo("Info", f"Overview was expanded by {amount} entries.")
+        except ValueError:
+            messagebox.showerror("Error", "Please insert a valid int value.")
+
+    entry = tk.Entry(root)
+    entry.pack(pady=10)
+
+    button = tk.Button(root, text="Download entries", command=load_overview_button_clicked)
+    button.pack(pady=10)
+
+    # Hauptschleife starten
+    root.mainloop()
+
+#createWindow()
+
+
+
 def load_balance_quartely(amount):
-    stock_list_new = gil.load_stock_symbol_list()
-    excel_data_bal, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Balance")
-    check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
-    excel_data_up_bal, not_updatable_bal = gil.update_balance_sheet_quarterly(excel_data_bal, update_list[0:amount])
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Tabelle1", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Balance")
+    print("Step 1: Loading initial data from Excel-> Done")
 
-    gil.write_to_excel_update_balance(excel_data_up_bal)
-    gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_bal)
+    existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
+    mainExcel, stocksNotExisting = gil.update_balance_sheet_quarterly(mainSheetDataframe, updateNotExistingSymbols[0:amount])
 
+    gil.writeToExcelToUpdateOverview(mainExcel)
+    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+
+#load_balance_quartely(1)
+
+gil.insertFirstRowColumnNames()
+gil.insertFirstRowColumnNamesBalance()
+
+'''
 def load_balance_annual(amount):
     stock_list_new = gil.load_stock_symbol_list()
     excel_data_bal, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Balance")
@@ -65,7 +106,7 @@ def load_daily_stock_prices():
 #gil.update_first_row()
 '''
 
-load_overview(1)
+#load_overview(8)
 #load_income_annual(60)
 #load_balance_annual(230)
 
