@@ -6,7 +6,10 @@ import time
 import yfinance as yf
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
+from openpyxl.utils.dataframe import dataframe_to_rows
+
 import tkinter as tk
+import os
 
 ################################################################## 
 # Global variables based on API requirements
@@ -27,27 +30,64 @@ FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
 ##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
 def insertFirstRowColumnNames():
     firstRowData = FundamentalDataAPIPull.get_company_overview("A")[0]
-    df = pd.read_excel("output.xlsx", sheet_name="Overview")
-    df = df.append(firstRowData, ignore_index=True)    
+      
     # Adding of additional columns at the end
-    df["Downloaded_at_datetime"] = timestampToday()
-    df["Downloaded_at_quarter"] = timestampQuarter()
+    firstRowData["Downloaded_at_datetime"] = timestampToday()
+    firstRowData["Downloaded_at_quarter"] = timestampQuarter()
 
-    df.to_excel("output.xlsx", sheet_name="Overview", index=False)
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if worksheet exists
+    if "Overview" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Overview")
+    else:
+        balanceSheet = book["Overview"]
+
+    for row in dataframe_to_rows(firstRowData, index=False, header=True):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excel_path)
 
 def insertFirstRowColumnNamesBalance():
+    # Load balance data from Alpha Vantage
     firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly("A")[0]
-    new_df = pd.DataFrame([firstRowData])
+    
     # Adding of additional columns at the end
-    new_df["Downloaded_at_datetime"] = timestampToday()
-    new_df["Downloaded_at_quarter"] = timestampQuarter()
-    
-    
+    firstRowData["Downloaded_at_datetime"] = timestampToday()
+    firstRowData["Downloaded_at_quarter"] = timestampQuarter()
 
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if worksheet exists
+    if "Balance" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Balance")
+    else:
+        balanceSheet = book["Balance"]
+
+    for row in dataframe_to_rows(firstRowData, index=False, header=True):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excel_path)
+        
    
-    new_df.to_excel("output.xlsx", sheet_name="Balance", index=False)
-
-
 # Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
 def loadOneColumnRowDataAsList(filename, sheetname, column):
     listFromColumn = pd.read_excel(filename, sheet_name=sheetname, usecols=column, header=None, index_col=0) #Read column A / No header - Take first row NOT as replacement header / No index / returns Dataframe
@@ -302,7 +342,21 @@ def load_stock_price_yf(stock_list_new):
 """
            
 def writeToExcelToUpdateOverview(mainExcel):
-    mainExcel.to_excel("output.xlsx", sheet_name="Overview", index=False)
+    
+    excelPath = "output.xlsx"
+
+    book = load_workbook(excelPath)
+
+    if "Overview" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Overview")
+    else:
+        balanceSheet = book["Overview"]
+
+    for row in dataframe_to_rows(mainExcel, index=False, header=False):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excelPath)
 
 
 """

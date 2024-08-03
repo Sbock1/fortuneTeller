@@ -5,7 +5,7 @@ from tkinter import messagebox
 
 def load_overview(amount):
     
-    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Tabelle1", "A")
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
     mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
     print("Step 1: Loading initial data from Excel-> Done")
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
@@ -60,8 +60,8 @@ def load_balance_quartely(amount):
 
 #load_balance_quartely(1)
 
-gil.insertFirstRowColumnNames()
-gil.insertFirstRowColumnNamesBalance()
+#gil.insertFirstRowColumnNames()
+#gil.insertFirstRowColumnNamesBalance()
 
 '''
 def load_balance_annual(amount):
@@ -106,7 +106,7 @@ def load_daily_stock_prices():
 #gil.update_first_row()
 '''
 
-#load_overview(8)
+load_overview(1)
 #load_income_annual(60)
 #load_balance_annual(230)
 
