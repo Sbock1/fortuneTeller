@@ -63,8 +63,8 @@ def load_balance_quartely(amount):
     gil.writeToExcelToUpdateOverview(stockBalanceData, "Balance")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
-load_overview(1)
-load_balance_quartely(1)
+#load_overview(1)
+#load_balance_quartely(1)
 
 '''
 def load_balance_annual(amount):
