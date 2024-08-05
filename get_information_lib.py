@@ -14,7 +14,7 @@ import os
 ################################################################## 
 # Global variables based on API requirements
 API_key="HNNMDBOG55BREC5P" #Account API key to validate access
-time_delay = 18 #The free API access only allows a request every 18 seconds, therefore a timedelay is defined
+time_delay = 1 #The free API access only allows a request every 18 seconds, therefore a timedelay is defined -> UPDATE 07.2024: AV removed the API model, now 25 requests by day are allowed no delay needed.
 FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
 # IMPORTANT:
 # The AlphaVantage API documentation can be found here:
@@ -59,11 +59,18 @@ def insertFirstRowColumnNames():
 
 def insertFirstRowColumnNamesBalance():
     # Load balance data from Alpha Vantage
-    firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly("A")[0]
+    stock = "A"
+    firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly(stock)[0]
     
     # Adding of additional columns at the end
     firstRowData["Downloaded_at_datetime"] = timestampToday()
     firstRowData["Downloaded_at_quarter"] = timestampQuarter()
+
+    # Check and if not Dataframe datatype, convert to Dataframe
+    if not isinstance(firstRowData, pd.DataFrame):
+        firstRowData = pd.DataFrame([firstRowData])
+
+    firstRowData.insert(0, "Symbol", stock)
 
     # Path of file
     excel_path = "output.xlsx"
@@ -86,8 +93,29 @@ def insertFirstRowColumnNamesBalance():
 
     # Speichere die Änderungen
     book.save(excel_path)
-        
-   
+    APIRequestDelay()
+
+def deleletExcelPredefinedSheet():
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if predefined worksheet exists and delete it
+    if "Tabelle1" in book.sheetnames:
+        del book["Tabelle1"]
+    elif "Sheet1" in book.sheetnames:
+        del book["Sheet"]
+
+    # Speichere die Änderungen
+    book.save(excel_path)
+
+
 # Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
 def loadOneColumnRowDataAsList(filename, sheetname, column):
     listFromColumn = pd.read_excel(filename, sheet_name=sheetname, usecols=column, header=None, index_col=0) #Read column A / No header - Take first row NOT as replacement header / No index / returns Dataframe
@@ -116,7 +144,7 @@ def getExcelSheetInformation(filename, sheetname):
     mainSheetDataframe = pd.read_excel(filename, sheetname)
 
 
-    excelSymbolsExisting = list(mainSheetDataframe["Symbol"])
+    excelSymbolsExisting = list(set(mainSheetDataframe["Symbol"]))
     excelQuartersExisting = list(mainSheetDataframe["Downloaded_at_quarter"])
     
     return mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting
@@ -190,12 +218,11 @@ def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
 
             # Check and if not Dataframe datatype, convert to Dataframe
             if not isinstance(stockOverviewData, pd.DataFrame):
-                stockOverviewData = pd.DataFrame([stockOverviewData])
+                stockOverviewData = pd.DataFrame(stockOverviewData)
 
             # Make sure the columns are in the same order
             stockOverviewData = stockOverviewData.reindex(columns=mainExcel.columns)
 
-            mainExcel = pd.concat([mainExcel, stockOverviewData], ignore_index=True)
             APIRequestDelay()
         except ValueError:
             stocksNotExisting.append(elem)
@@ -204,38 +231,35 @@ def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
             APIRequestDelay()
             pass
     
-    return mainExcel, stocksNotExisting
+    return stockOverviewData, stocksNotExisting
 
-def update_balance_sheet_quarterly(mainExcel, update_list):
+def update_balance_sheet_quarterly(updateNotExistingSymbols):
     stocksNotExisting = []
     counter = 0
         
-    for elem in update_list:
+    for stock in updateNotExistingSymbols:
+        
         try:
             #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
-            stockBalanceData = FundamentalDataAPIPull.get_balance_sheet_quarterly(elem)[0]
+            stockBalanceData = FundamentalDataAPIPull.get_balance_sheet_quarterly(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
             stockBalanceData["Downloaded_at_quarter"] = timestampQuarter()
             
             # Check and if not Dataframe datatype, convert to Dataframe
             if not isinstance(stockBalanceData, pd.DataFrame):
-                stockBalanceData = pd.DataFrame([stockBalanceData])
-
-            # Make sure the columns are in the same order
-            stockBalanceData = stockBalanceData.reindex(columns=mainExcel.columns)
-
-            stockBalanceData.insert(0, "Symbol", elem)
-            APIRequestDelay()
+                stockBalanceData = pd.DataFrame(stockBalanceData)
             
-        except ValueError:
-            update_list.append(elem)
-            print("Error" + str(counter) + " " + str(elem))
-            counter = counter + 1
+            stockBalanceData.insert(0, "Symbol", stock)
             APIRequestDelay()
+        
+        except ValueError:
+            stocksNotExisting.append(stock)
+            print("Error" + str(counter) + " " + str(stock))
+            counter = counter + 1
             pass
-    
-    return mainExcel, update_list 
+        
+    return stockBalanceData, stocksNotExisting 
 
 """
 def update_balance_sheet_annual(excel_data, update_list):
@@ -341,16 +365,13 @@ def load_stock_price_yf(stock_list_new):
     return stock_price_df_t1
 """
            
-def writeToExcelToUpdateOverview(mainExcel):
+def writeToExcelToUpdateOverview(mainExcel, worksheet):
     
     excelPath = "output.xlsx"
 
     book = load_workbook(excelPath)
 
-    if "Overview" not in book.sheetnames:
-        balanceSheet = book.create_sheet("Overview")
-    else:
-        balanceSheet = book["Overview"]
+    balanceSheet = book[worksheet]
 
     for row in dataframe_to_rows(mainExcel, index=False, header=False):
         balanceSheet.append(row)

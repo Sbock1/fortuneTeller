@@ -3,16 +3,10 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 
-def load_overview(amount):
-    
-    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
-    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
-    print("Step 1: Loading initial data from Excel-> Done")
-    existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
-    mainExcel, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
-    print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
-    gil.writeToExcelToUpdateOverview(mainExcel)
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+def initializeExcelSheet():
+    gil.insertFirstRowColumnNames()
+    gil.insertFirstRowColumnNamesBalance()
+    gil.deleletExcelPredefinedSheet()
 
 def createWindow():
     # Main window
@@ -46,22 +40,31 @@ def createWindow():
 #createWindow()
 
 
-
-def load_balance_quartely(amount):
-    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Tabelle1", "A")
-    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Balance")
+def load_overview(amount):
+    
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
     print("Step 1: Loading initial data from Excel-> Done")
-
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
-    mainExcel, stocksNotExisting = gil.update_balance_sheet_quarterly(mainSheetDataframe, updateNotExistingSymbols[0:amount])
-
-    gil.writeToExcelToUpdateOverview(mainExcel)
+    stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
+    print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
+    gil.writeToExcelToUpdateOverview(stockOverviewData, "Overview")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
-#load_balance_quartely(1)
 
-#gil.insertFirstRowColumnNames()
-#gil.insertFirstRowColumnNamesBalance()
+def load_balance_quartely(amount):
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Balance")
+    print("Step 1: Loading initial data from Excel-> Done")
+    existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
+    print(f"Step 2: Follwing symbols exist already {excelSymbolsExisting}")
+    stockBalanceData, stocksNotExisting = gil.update_balance_sheet_quarterly(updateNotExistingSymbols[0:amount])
+    print(f"Step 4: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
+    gil.writeToExcelToUpdateOverview(stockBalanceData, "Balance")
+    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+
+#load_overview(1)
+load_balance_quartely(1)
 
 '''
 def load_balance_annual(amount):
@@ -103,10 +106,9 @@ def load_daily_stock_prices():
 #Write function that create the "output.xlsx" file if not already existing
 
 
-#gil.update_first_row()
 '''
 
-load_overview(1)
+#load_overview(1)
 #load_income_annual(60)
 #load_balance_annual(230)
 
