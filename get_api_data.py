@@ -5,7 +5,7 @@ from tkinter import messagebox
 
 def initializeExcelSheet():
     gil.insertFirstRowColumnNames()
-    gil.insertFirstRowColumnNamesBalance()
+    gil.insertFirstRowColumnNamesBalanceQuarterly()
     gil.deleletExcelPredefinedSheet()
 
 def createWindow():
@@ -51,7 +51,6 @@ def load_overview(amount):
     gil.writeToExcelToUpdateOverview(stockOverviewData, "Overview")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
-
 def load_balance_quartely(amount):
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
     mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Balance")
@@ -63,19 +62,21 @@ def load_balance_quartely(amount):
     gil.writeToExcelToUpdateOverview(stockBalanceData, "Balance")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
-#load_overview(1)
-#load_balance_quartely(1)
-
-'''
 def load_balance_annual(amount):
-    stock_list_new = gil.load_stock_symbol_list()
-    excel_data_bal, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Balance")
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Balance_Yearly")
+    ###
     check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
     excel_data_up_bal, not_updatable_bal = gil.update_balance_sheet_annual(excel_data_bal, update_list[0:amount])
 
     gil.write_to_excel_update_balance(excel_data_up_bal)
     gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_bal)
+    ###
 
+#load_overview(1)
+load_balance_quartely(1)
+    
+'''
 def load_income_quartely(amount):
     stock_list_new = gil.load_stock_symbol_list()
     excel_data_inc, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Income")

@@ -95,6 +95,46 @@ def insertFirstRowColumnNamesBalance():
     book.save(excel_path)
     APIRequestDelay()
 
+
+def insertFirstRowColumnNamesBalanceYearly():
+    # Load balance data from Alpha Vantage
+    stock = "A"
+    firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly(stock)[0]
+    
+    # Adding of additional columns at the end
+    firstRowData["Downloaded_at_datetime"] = timestampToday()
+    firstRowData["Downloaded_at_quarter"] = timestampQuarter()
+
+    # Check and if not Dataframe datatype, convert to Dataframe
+    if not isinstance(firstRowData, pd.DataFrame):
+        firstRowData = pd.DataFrame([firstRowData])
+
+    firstRowData.insert(0, "Symbol", stock)
+
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if worksheet exists
+    if "Balance" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Balance")
+    else:
+        balanceSheet = book["Balance"]
+
+    for row in dataframe_to_rows(firstRowData, index=False, header=True):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excel_path)
+    APIRequestDelay()
+
+
 def deleletExcelPredefinedSheet():
     # Path of file
     excel_path = "output.xlsx"
