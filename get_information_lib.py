@@ -57,7 +57,7 @@ def insertFirstRowColumnNames():
     # Speichere die Änderungen
     book.save(excel_path)
 
-def insertFirstRowColumnNamesBalance():
+def insertFirstRowColumnNamesBalanceQuarterly():
     # Load balance data from Alpha Vantage
     stock = "A"
     firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly(stock)[0]
@@ -83,10 +83,10 @@ def insertFirstRowColumnNamesBalance():
     book = load_workbook(excel_path)
 
     # Check if worksheet exists
-    if "Balance" not in book.sheetnames:
-        balanceSheet = book.create_sheet("Balance")
+    if "Balance_Quarterly" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Balance_Quarterly")
     else:
-        balanceSheet = book["Balance"]
+        balanceSheet = book["Balance_Quarterly"]
 
     for row in dataframe_to_rows(firstRowData, index=False, header=True):
         balanceSheet.append(row)
@@ -99,7 +99,7 @@ def insertFirstRowColumnNamesBalance():
 def insertFirstRowColumnNamesBalanceYearly():
     # Load balance data from Alpha Vantage
     stock = "A"
-    firstRowData = FundamentalDataAPIPull.get_balance_sheet_quarterly(stock)[0]
+    firstRowData = FundamentalDataAPIPull.get_balance_sheet_annual(stock)[0]
     
     # Adding of additional columns at the end
     firstRowData["Downloaded_at_datetime"] = timestampToday()
@@ -122,10 +122,48 @@ def insertFirstRowColumnNamesBalanceYearly():
     book = load_workbook(excel_path)
 
     # Check if worksheet exists
-    if "Balance" not in book.sheetnames:
-        balanceSheet = book.create_sheet("Balance")
+    if "Balance_Yearly" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Balance_Yearly")
     else:
-        balanceSheet = book["Balance"]
+        balanceSheet = book["Balance_Yearly"]
+
+    for row in dataframe_to_rows(firstRowData, index=False, header=True):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excel_path)
+    APIRequestDelay()
+
+def insertFirstRowColumnNamesIncomeQuarterly():
+    # Load balance data from Alpha Vantage
+    stock = "A"
+    firstRowData = FundamentalDataAPIPull.get_income_statement_quarterly(stock)[0]
+    
+    # Adding of additional columns at the end
+    firstRowData["Downloaded_at_datetime"] = timestampToday()
+    firstRowData["Downloaded_at_quarter"] = timestampQuarter()
+
+    # Check and if not Dataframe datatype, convert to Dataframe
+    if not isinstance(firstRowData, pd.DataFrame):
+        firstRowData = pd.DataFrame([firstRowData])
+
+    firstRowData.insert(0, "Symbol", stock)
+
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if worksheet exists
+    if "Income_Quarterly" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Income_Quarterly")
+    else:
+        balanceSheet = book["Income_Quarterly"]
 
     for row in dataframe_to_rows(firstRowData, index=False, header=True):
         balanceSheet.append(row)
@@ -301,57 +339,65 @@ def update_balance_sheet_quarterly(updateNotExistingSymbols):
         
     return stockBalanceData, stocksNotExisting 
 
+
+def update_balance_sheet_annual(updateNotExistingSymbols):
+    stocksNotExisting = []
+    counter = 0
+        
+    for stock in updateNotExistingSymbols:
+        
+        try:
+            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            stockBalanceData = FundamentalDataAPIPull.get_balance_sheet_annual(stock)[0]
+            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
+            stockBalanceData["Downloaded_at_datetime"] = timestampToday()
+            stockBalanceData["Downloaded_at_quarter"] = timestampQuarter()
+            
+            # Check and if not Dataframe datatype, convert to Dataframe
+            if not isinstance(stockBalanceData, pd.DataFrame):
+                stockBalanceData = pd.DataFrame(stockBalanceData)
+            
+            stockBalanceData.insert(0, "Symbol", stock)
+            APIRequestDelay()
+        
+        except ValueError:
+            stocksNotExisting.append(stock)
+            print("Error" + str(counter) + " " + str(stock))
+            counter = counter + 1
+            pass
+        
+    return stockBalanceData, stocksNotExisting 
+
+
+def update_income_statement_quarterly(updateNotExistingSymbols):
+    stocksNotExisting = []
+    counter = 0
+        
+    for stock in updateNotExistingSymbols:
+        
+        try:
+            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            stockBalanceData = FundamentalDataAPIPull.get_income_statement_quarterly(stock)[0]
+            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
+            stockBalanceData["Downloaded_at_datetime"] = timestampToday()
+            stockBalanceData["Downloaded_at_quarter"] = timestampQuarter()
+            
+            # Check and if not Dataframe datatype, convert to Dataframe
+            if not isinstance(stockBalanceData, pd.DataFrame):
+                stockBalanceData = pd.DataFrame(stockBalanceData)
+            
+            stockBalanceData.insert(0, "Symbol", stock)
+            APIRequestDelay()
+        
+        except ValueError:
+            stocksNotExisting.append(stock)
+            print("Error" + str(counter) + " " + str(stock))
+            counter = counter + 1
+            pass
+        
+    return stockBalanceData, stocksNotExisting  
+
 """
-def update_balance_sheet_annual(excel_data, update_list):
-    today = pd.to_datetime(dt.datetime.today())
-    today_quarter = int(today.quarter)
-    not_updatable = []
-    counter = 0
-    for elem in update_list:
-        try:
-            stock1 = fd.get_balance_sheet_annual(elem)[0]
-            if len(stock1.columns) >= 38:
-                stock1.insert(0, "Symbol", elem)
-                stock1.insert(39, "Downloaded_at", pd.to_datetime(dt.datetime.today()))
-                stock1.insert(40, "Downloaded_quarter", today_quarter)
-                excel_data = pd.concat([excel_data, stock1], ignore_index=True)
-                time.sleep(18)
-            else:
-                not_updatable.append(elem)
-        except ValueError:
-            not_updatable.append(elem)
-            print("Error" + str(counter) + " " + str(elem))
-            counter = counter + 1
-            time.sleep(time_delay)
-            pass
-    
-    return excel_data, not_updatable 
-
-
-def update_income_statement_quarterly(excel_data, update_list):
-    today = pd.to_datetime(dt.datetime.today())
-    today_quarter = int(today.quarter)
-    not_updatable = []
-    counter = 0
-    for elem in update_list:
-        try:
-            stock1 = fd.get_income_statement_quarterly(elem)[0]
-            if len(stock1.columns) >= 26:
-                stock1.insert(0, "Symbol", elem)
-                stock1.insert(26, "Downloaded_at", pd.to_datetime(dt.datetime.today()))
-                stock1.insert(27, "Downloaded_quarter", today_quarter)
-                excel_data = pd.concat([excel_data, stock1], ignore_index=True)
-                time.sleep(time_delay)
-            else:
-                not_updatable.append(elem)
-        except ValueError:
-            not_updatable.append(elem)
-            print("Error" + str(counter) + " " + str(elem))
-            counter = counter + 1
-            time.sleep(time_delay)
-            pass
-    
-    return excel_data, not_updatable  
 
 def update_income_statement_annual(excel_data, update_list):
     today = pd.to_datetime(dt.datetime.today())
