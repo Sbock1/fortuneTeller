@@ -1,4 +1,7 @@
 from alpha_vantage.fundamentaldata import FundamentalData
+from alpha_vantage.timeseries import TimeSeries
+import matplotlib.pyplot as plt
+import seaborn as sb
 import pandas as pd
 import numpy as np
 import datetime as dt
@@ -14,17 +17,13 @@ import os
 ################################################################## 
 # Global variables based on API requirements
 API_key="HNNMDBOG55BREC5P" #Account API key to validate access
-time_delay = 1 #The free API access only allows a request every 18 seconds, therefore a timedelay is defined -> UPDATE 07.2024: AV removed the API model, now 25 requests by day are allowed no delay needed.
+time_delay = 1 #The free API access only allows 25 requests per day without any delay, but for test
 FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
+TimeSeriesPull = TimeSeries(key=API_key, output_format="pandas")
 # IMPORTANT:
 # The AlphaVantage API documentation can be found here:
 # https://www.alphavantage.co/documentation/
 ##################################################################
-
-# Global variables
-# These are the two document which form the basis of the software
-# mainExcel = pd.read_excel("Output.xlsx", sheet_name="Overview")
-#stockSymbolList = pd.read_excel("Stock_symbols_list.xlsx")
 
 
 ##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
@@ -203,6 +202,52 @@ def insertFirstRowColumnNamesIncomeYearly():
         balanceSheet = book.create_sheet("Income_Yearly")
     else:
         balanceSheet = book["Income_Yearly"]
+
+    for row in dataframe_to_rows(firstRowData, index=False, header=True):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excel_path)
+    APIRequestDelay()
+
+
+def insertFirstRowColumnNamesStockDaily():
+    # Load balance data from Alpha Vantage
+    stock = "A"
+    firstRowData = TimeSeriesPull.get_daily(stock, outputsize="full")[0]
+    
+    # Adding of additional columns at the end
+    firstRowData["Downloaded_at_datetime"] = timestampToday()
+    firstRowData["Downloaded_at_quarter"] = timestampQuarter()
+
+    # Check and if not Dataframe datatype, convert to Dataframe
+    if not isinstance(firstRowData, pd.DataFrame):
+        firstRowData = pd.DataFrame([firstRowData])
+
+    # Convert index to a column to preserve the datetime of the actual stock value
+    firstRowData.reset_index(inplace=True)
+
+    # Rename the column to Date
+    firstRowData.rename(columns={'index':'Date'}, inplace=True)
+    firstRowData["date"] = firstRowData["date"].dt.date
+
+    firstRowData.insert(0, "Symbol", stock)
+
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if worksheet exists
+    if "Stocks_Daily" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Stocks_Daily")
+    else:
+        balanceSheet = book["Stocks_Daily"]
 
     for row in dataframe_to_rows(firstRowData, index=False, header=True):
         balanceSheet.append(row)
@@ -466,6 +511,43 @@ def update_income_statement_annual(updateNotExistingSymbols):
         
     return stockBalanceData, stocksNotExisting  
 
+
+def getTimeSeriesData(updateNotExistingSymbols):
+    stocksNotExisting = []
+    counter = 0
+
+    for stock in updateNotExistingSymbols:
+        try:
+            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            dailySeriesPerStock = TimeSeriesPull.get_daily(stock, outputsize="full")[0]
+            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
+            dailySeriesPerStock["Downloaded_at_datetime"] = timestampToday()
+            dailySeriesPerStock["Downloaded_at_quarter"] = timestampQuarter()
+            
+            # Check and if not Dataframe datatype, convert to Dataframe
+            if not isinstance(dailySeriesPerStock, pd.DataFrame):
+                dailySeriesPerStock = pd.DataFrame(dailySeriesPerStock)
+            
+            # Convert index to a column to preserve the datetime of the actual stock value
+            dailySeriesPerStock.reset_index(inplace=True)
+
+            # Rename the column to Date
+            dailySeriesPerStock.rename(columns={'index':'Date'}, inplace=True)
+            dailySeriesPerStock["date"] = dailySeriesPerStock["date"].dt.date
+
+            dailySeriesPerStock.insert(0, "Symbol", stock)
+            APIRequestDelay()
+        
+        except ValueError:
+            stocksNotExisting.append(stock)
+            print("Error" + str(counter) + " " + str(stock))
+            counter = counter + 1
+            pass
+        
+
+    return dailySeriesPerStock, stocksNotExisting  
+
+
 """
 def refresh(excel_data, refresh_list):
     today = pd.to_datetime(dt.datetime.today())
@@ -509,33 +591,6 @@ def writeToExcelToUpdateOverview(mainExcel, worksheet):
 
 
 """
-def write_to_excel_update_balance(excel_data):
-    book = load_workbook("output.xlsx")
-    book_sheet = book["Balance"]
-   
-      
-    writer = pd.ExcelWriter("output.xlsx", engine='openpyxl') 
-
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-
-    excel_data.to_excel(writer, index=False, sheet_name="Balance")
-
-    writer.save()
-
-def write_to_excel_update_income(excel_data):
-    book = load_workbook("output.xlsx")
-    book_sheet = book["Income"]
-   
-      
-    writer = pd.ExcelWriter("output.xlsx", engine='openpyxl') 
-
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-
-    excel_data.to_excel(writer, index=False, sheet_name="Income")
-
-    writer.save()
 
 def write_to_excel_daily_stock_price(result):
     book = load_workbook("output.xlsx")
@@ -580,8 +635,8 @@ def prep_df_for_calc(df_to_prep):
 def calc_price_per_share():
     book = load_workbook("output.xlsx")
     book_overview = book["Overview"]
-    book_balance = book["Balance"]
-    book_income = book["Income"]
+    book_balance_quarterly = book["Balance_Quarterly"]
+    book_income_quarterly = book["Income_Quarterly"]
     book_stock_price = book["Daily_Stock_Price"]
 
     data_balance = book_balance.values

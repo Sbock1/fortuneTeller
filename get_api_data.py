@@ -10,7 +10,9 @@ def initializeExcelSheet():
     gil.insertFirstRowColumnNamesBalanceYearly()
     gil.insertFirstRowColumnNamesIncomeQuarterly()
     gil.insertFirstRowColumnNamesIncomeYearly()
+    gil.insertFirstRowColumnNamesStockDaily()
     gil.deleletExcelPredefinedSheet()
+
 
 
 def createWindow():
@@ -105,25 +107,27 @@ def load_income_annual(amount):
     gil.writeToExcelToUpdateOverview(stockBalanceData, "Income_Yearly")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
+def load_daily_stock(amount):
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
+    mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Stocks_Daily")
+    print("Step 1: Loading initial data from Excel-> Done")
+    existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
+    print(f"Step 2: Follwing symbols exist already {excelSymbolsExisting}")
+
+    stockBalanceData, stocksNotExisting = gil.getTimeSeriesData(updateNotExistingSymbols[0:amount])
+
+    gil.writeToExcelToUpdateOverview(stockBalanceData, "Stocks_Daily")
+    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+
     
-#load_overview(1)
+#load_overview(1)   
 #load_balance_quartely(1)
 #load_balance_annual(1)
 #load_income_quartely(1)
-load_income_annual(1)
-    
+#load_income_annual(1)
+load_daily_stock(1)
+
 '''
-def load_income_annual(amount):
-    stock_list_new = gil.load_stock_symbol_list()
-    excel_data_inc, excel_symbol_output, excel_quarter_output = gil.get_output_data_to_pandas("output.xlsx", "Income")
-    check_list, refresh_list, update_list = gil.search_symbol(stock_list_new, excel_symbol_output, excel_quarter_output)
-    excel_data_up_inc, not_updatable_inc = gil.update_income_statement_annual(excel_data_inc, update_list[0:amount])
-
-    gil.write_to_excel_update_income(excel_data_up_inc)
-    gil.delete_not_upgradable_symbols(stock_list_new, not_updatable_inc)
-
-
-
 def load_daily_stock_prices():
     stock_list_new = gil.load_stock_symbol_list()
     stock_list_con = " ".join(str(elem) for elem in stock_list_new)
@@ -131,13 +135,8 @@ def load_daily_stock_prices():
     daily_price_stock_list = gil.load_stock_price_yf(stock_list_con)
     gil.write_to_excel_daily_stock_price(daily_price_stock_list)
 
-#Write function that create the "output.xlsx" file if not already existing
 
 
 '''
-
-#load_overview(1)
-#load_income_annual(60)
-#load_balance_annual(230)
 
 #load_daily_stock_prices()
