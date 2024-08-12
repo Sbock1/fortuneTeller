@@ -55,7 +55,7 @@ def load_overview(amount):
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
     stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
     print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
-    gil.writeToExcelToUpdateOverview(stockOverviewData, "Overview")
+    gil.writeToExcel(stockOverviewData, "Overview")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
@@ -67,7 +67,7 @@ def load_balance_quartely(amount):
     print(f"Step 2: Follwing symbols exist already {excelSymbolsExisting}")
     stockBalanceData, stocksNotExisting = gil.update_balance_sheet_quarterly(updateNotExistingSymbols[0:amount])
     print(f"Step 3: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
-    gil.writeToExcelToUpdateOverview(stockBalanceData, "Balance_Quarterly")
+    gil.writeToExcel(stockBalanceData, "Balance_Quarterly")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
@@ -79,7 +79,7 @@ def load_balance_annual(amount):
     print(f"Step 2: Follwing symbols exist already {excelSymbolsExisting}")
     stockBalanceData, stocksNotExisting = gil.update_balance_sheet_annual(updateNotExistingSymbols[0:amount])
     print(f"Step 3: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
-    gil.writeToExcelToUpdateOverview(stockBalanceData, "Balance_Yearly")
+    gil.writeToExcel(stockBalanceData, "Balance_Yearly")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
     
 
@@ -92,7 +92,7 @@ def load_income_quartely(amount):
 
     stockBalanceData, stocksNotExisting = gil.update_income_statement_quarterly(updateNotExistingSymbols[0:amount])
 
-    gil.writeToExcelToUpdateOverview(stockBalanceData, "Income_Quarterly")
+    gil.writeToExcel(stockBalanceData, "Income_Quarterly")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 def load_income_annual(amount):
@@ -104,7 +104,7 @@ def load_income_annual(amount):
 
     stockBalanceData, stocksNotExisting = gil.update_income_statement_annual(updateNotExistingSymbols[0:amount])
 
-    gil.writeToExcelToUpdateOverview(stockBalanceData, "Income_Yearly")
+    gil.writeToExcel(stockBalanceData, "Income_Yearly")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 def load_daily_stock(amount):
@@ -116,7 +116,7 @@ def load_daily_stock(amount):
 
     stockBalanceData, stocksNotExisting = gil.getTimeSeriesData(updateNotExistingSymbols[0:amount])
 
-    gil.writeToExcelToUpdateOverview(stockBalanceData, "Stocks_Daily")
+    gil.writeToExcel(stockBalanceData, "Stocks_Daily")
     gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
     

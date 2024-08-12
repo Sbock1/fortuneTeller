@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import datetime as dt
 import time
-import yfinance as yf
+import sqlite3 as sql
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -575,7 +575,7 @@ def load_stock_price_yf(stock_list_new):
     return stock_price_df_t1
 """
            
-def writeToExcelToUpdateOverview(mainExcel, worksheet):
+def writeToExcel(mainExcel, worksheet):
     
     excelPath = "output.xlsx"
 
@@ -589,6 +589,14 @@ def writeToExcelToUpdateOverview(mainExcel, worksheet):
     # Speichere die Änderungen
     book.save(excelPath)
 
+
+def writeToDataBase(mainExcel):
+
+    conn = sql.connect("mainDatabase.db")
+    mainExcel.to_sql(, index=False)
+
+
+    conn.close()
 
 """
 
