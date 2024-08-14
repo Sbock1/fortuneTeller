@@ -590,10 +590,11 @@ def writeToExcel(mainExcel, worksheet):
     book.save(excelPath)
 
 
-def writeToDataBase(mainExcel):
+######## TO-DO: Update based on Database column symbols, NOT the excel sheet. Write new funcs for all features overview/balance/income
+def writeToDataBase(mainExcel, database):
 
     conn = sql.connect("mainDatabase.db")
-    mainExcel.to_sql(, index=False)
+    mainExcel.to_sql(database, conn, if_exists='replace', index=False)
 
 
     conn.close()
