@@ -645,6 +645,8 @@ def write_to_excel_daily_stock_price(result):
 
 """
 
+# NOT USED: Implementation as is, leads to deletion of Symbol entries in Stock_symbol_list, because the API request does get canceled from provide due to exhaustion of free API requests per day.
+# TO-DO: When this particular error comes back from server, it is needed to ignore this delete func.
 def deleteNoneUpdatableSymbols(symbol_list, stocksNotExisting):
     filename = "Stock_symbols_list.xlsx"
     sheetname = "Overview"
