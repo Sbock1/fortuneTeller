@@ -312,6 +312,7 @@ def getExcelSheetInformation(filename, sheetname):
     return mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting
 
 
+
 def checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting):
     # This func checks three things:
     # 1. Which symbols (stocks) are already in the main excel written
@@ -322,17 +323,24 @@ def checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQua
     symbolsNeedRefresh = []
     updateNotExistingSymbols = []
     
-    for symbol in symbolList:
-        if symbol in excelSymbolsExisting:
-            rowOnWorksheet = excelSymbolsExisting.index(symbol)
-            if timestampQuarter() == excelQuartersExisting[rowOnWorksheet]:
-                existingSymbols.append(symbol + " in" + str(timestampQuarter()) +" uptodate")
+    if excelSymbolsExisting != []:
+        for symbol in symbolList:
+            if symbol in excelSymbolsExisting:
+                rowOnWorksheet = excelSymbolsExisting.index(symbol)
+                if timestampQuarter() == excelQuartersExisting[rowOnWorksheet]:
+                    existingSymbols.append(symbol + " in" + str(timestampQuarter()) +" uptodate")
+                else:
+                    symbolsNeedRefresh.append([symbol, rowOnWorksheet])
             else:
-                symbolsNeedRefresh.append([symbol, rowOnWorksheet])
-        else:
-            updateNotExistingSymbols.append(symbol)
-            
-    return existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols
+                updateNotExistingSymbols.append(symbol)
+                
+        return existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols
+
+    else:
+        updateNotExistingSymbols=symbolList
+
+        return existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols
+
 
 
 def APIRequestDelay():
@@ -366,8 +374,9 @@ def identifyLastColumnWithContents(DataFrame):
     return lastColumnWithContentsNumber
 
 
-def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
+def updateCompanyOverview(updateNotExistingSymbols):
     stocksNotExisting = []
+    allStockOverviewData = pd.DataFrame()
     counter = 0
 
     for elem in updateNotExistingSymbols:
@@ -382,8 +391,7 @@ def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
             if not isinstance(stockOverviewData, pd.DataFrame):
                 stockOverviewData = pd.DataFrame(stockOverviewData)
 
-            # Make sure the columns are in the same order
-            stockOverviewData = stockOverviewData.reindex(columns=mainExcel.columns)
+            allStockOverviewData = pd.concat([allStockOverviewData, stockOverviewData], ignore_index=True)
 
             APIRequestDelay()
         except ValueError:
@@ -393,7 +401,7 @@ def updateCompanyOverview(mainExcel, updateNotExistingSymbols):
             APIRequestDelay()
             pass
     
-    return stockOverviewData, stocksNotExisting
+    return allStockOverviewData, stocksNotExisting
 
 def update_balance_sheet_quarterly(updateNotExistingSymbols):
     stocksNotExisting = []
@@ -589,13 +597,35 @@ def writeToExcel(mainExcel, worksheet):
     # Speichere die Änderungen
     book.save(excelPath)
 
+def readFromDataBase(database):
+    # Connection to Database
+    conn = sql.connect("mainDatabase.db")
+
+    try:
+        mainSheetDataframe = pd.read_sql(f"SELECT Symbol, Downloaded_at_quarter FROM {database}", conn)
+        
+        excelSymbolsExisting = list(set(mainSheetDataframe["Symbol"]))
+        excelQuartersExisting = list(mainSheetDataframe["Downloaded_at_quarter"])
+        
+        return excelSymbolsExisting, excelQuartersExisting
+
+    except:
+
+        excelSymbolsExisting = ["A"]
+        excelQuartersExisting = timestampQuarter()
+
+        return excelSymbolsExisting, excelQuartersExisting
+
+    finally:
+        conn.close()
+
 
 ######## TO-DO: Update based on Database column symbols, NOT the excel sheet. Write new funcs for all features overview/balance/income
 def writeToDataBase(mainExcel, database):
 
     conn = sql.connect("mainDatabase.db")
-    mainExcel.to_sql(database, conn, if_exists='replace', index=False)
-
+    mainExcel.to_sql(database, conn, if_exists="append", index=False)
+    
 
     conn.close()
 

@@ -30,7 +30,7 @@ def createWindow():
     def load_overview_button_clicked():
         try:
             amount = int(entry.get())
-            load_overview(amount)
+            loadOverviewExcel(amount)
             messagebox.showinfo("Info", f"Overview was expanded by {amount} entries.")
         except ValueError:
             messagebox.showerror("Error", "Please insert a valid int value.")
@@ -47,17 +47,28 @@ def createWindow():
 #createWindow()
 
 
-def load_overview(amount):
+def loadOverviewExcel(amount):
     
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
     mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
     print("Step 1: Loading initial data from Excel-> Done")
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
-    stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(mainSheetDataframe, updateNotExistingSymbols[0:amount])
+    stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(updateNotExistingSymbols[0:amount])
     print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
     #gil.writeToExcel(stockOverviewData, "Overview")
+    gil.writeToExcel(stockOverviewData, "Overview")
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+
+def loadOverviewDatabase(amount):
+    
+    symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
+    excelSymbolsExisting, excelQuartersExisting = gil.readFromDataBase("Overview")
+    print("Step 1: Loading initial data from Excel-> Done")
+    existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
+    stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(updateNotExistingSymbols[0:amount])
+    print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
     gil.writeToDataBase(stockOverviewData, "Overview")
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
 def load_balance_quartely(amount):
@@ -69,7 +80,7 @@ def load_balance_quartely(amount):
     stockBalanceData, stocksNotExisting = gil.update_balance_sheet_quarterly(updateNotExistingSymbols[0:amount])
     print(f"Step 3: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
     gil.writeToExcel(stockBalanceData, "Balance_Quarterly")
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
 def load_balance_annual(amount):
@@ -81,7 +92,7 @@ def load_balance_annual(amount):
     stockBalanceData, stocksNotExisting = gil.update_balance_sheet_annual(updateNotExistingSymbols[0:amount])
     print(f"Step 3: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
     gil.writeToExcel(stockBalanceData, "Balance_Yearly")
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
     
 
 def load_income_quartely(amount):
@@ -94,7 +105,7 @@ def load_income_quartely(amount):
     stockBalanceData, stocksNotExisting = gil.update_income_statement_quarterly(updateNotExistingSymbols[0:amount])
 
     gil.writeToExcel(stockBalanceData, "Income_Quarterly")
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 def load_income_annual(amount):
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
@@ -106,7 +117,7 @@ def load_income_annual(amount):
     stockBalanceData, stocksNotExisting = gil.update_income_statement_annual(updateNotExistingSymbols[0:amount])
 
     gil.writeToExcel(stockBalanceData, "Income_Yearly")
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 def load_daily_stock(amount):
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
@@ -118,10 +129,11 @@ def load_daily_stock(amount):
     stockBalanceData, stocksNotExisting = gil.getTimeSeriesData(updateNotExistingSymbols[0:amount])
 
     gil.writeToExcel(stockBalanceData, "Stocks_Daily")
-    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
     
-load_overview(1)   
+#loadOverviewExcel(2)
+loadOverviewDatabase(2)   
 #load_balance_quartely(1)
 #load_balance_annual(1)
 #load_income_quartely(1)
