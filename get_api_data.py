@@ -14,6 +14,8 @@ def initializeExcelSheet():
     gil.deleletExcelPredefinedSheet()
 
 
+#gil.sortDatabaseBySymbolName("Overview")
+
 
 def createWindow():
     # Main window
@@ -55,8 +57,8 @@ def loadOverviewExcel(amount):
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
     stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(updateNotExistingSymbols[0:amount])
     print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
+    gil.writeToDataBase(stockOverviewData, "Overview")
     #gil.writeToExcel(stockOverviewData, "Overview")
-    gil.writeToExcel(stockOverviewData, "Overview")
     #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 def loadOverviewDatabase(amount):
@@ -133,7 +135,7 @@ def load_daily_stock(amount):
 
     
 #loadOverviewExcel(2)
-loadOverviewDatabase(2)   
+#loadOverviewDatabase(2)   
 #load_balance_quartely(1)
 #load_balance_annual(1)
 #load_income_quartely(1)

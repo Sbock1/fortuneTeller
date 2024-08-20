@@ -629,6 +629,28 @@ def writeToDataBase(mainExcel, database):
 
     conn.close()
 
+
+def sortDatabaseBySymbolName(table):
+    
+    conn = sql.connect("mainDatabase.db")
+
+    cursor = conn.cursor()
+
+    # Create temp table differently sorted
+    cursor.execute(f"CREATE TEMPORARY TABLE temp_{table} AS SELECT * FROM {table} ORDER BY Symbol ASC")
+    
+    # Delete old table
+    cursor.execute(f"DROP TABLE {table}")
+    
+    cursor.execute(f"ALTER TABLE temp_{table} RENAME TO {table}")
+
+
+    conn.commit()
+
+    conn.close()
+
+
+
 """
 
 def write_to_excel_daily_stock_price(result):
@@ -657,6 +679,11 @@ def deleteNoneUpdatableSymbols(symbol_list, stocksNotExisting):
     excelDataFrame = pd.DataFrame(filtered_symbols, columns=[0])
 
     excelDataFrame.to_excel(filename, sheet_name=sheetname, index=False, header=False)
+
+
+
+
+
 
 
 """
