@@ -211,7 +211,7 @@ def loadDailyStockDatabase(amount):
 #load_income_annual(1)
 #loadIncomeAnnuallyDatabase(2)
 #load_daily_stock(1)
-#loadDailyStockDatabase(2)
+loadDailyStockDatabase(1)
 
 
 '''
