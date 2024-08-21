@@ -26,7 +26,7 @@ TimeSeriesPull = TimeSeries(key=API_key, output_format="pandas")
 ##################################################################
 
 
-##Update first row -> needs to be called separately, not included yet -> TO-DO: Better implementation
+##Update first row -> needs to be called separately, not included yet in general API request download -> TO-DO: Better implementation
 def insertFirstRowColumnNames():
     firstRowData = FundamentalDataAPIPull.get_company_overview("A")[0]
       
@@ -44,7 +44,7 @@ def insertFirstRowColumnNames():
 
     book = load_workbook(excel_path)
 
-    # Check if worksheet exists
+    # Check if worksheet exists, if not create it
     if "Overview" not in book.sheetnames:
         balanceSheet = book.create_sheet("Overview")
     else:
@@ -278,6 +278,28 @@ def deleletExcelPredefinedSheet():
     book.save(excel_path)
 
 
+############################# TO-DO-
+def insertFirstRowIntoDatabaseTable(databaseName):
+    conn = sql.connect(databaseName)
+    cursor = conn.cursor()
+
+
+
+
+
+#############################
+
+
+def writeToDataBase(mainExcel, database):
+    conn = sql.connect("mainDatabase.db")
+    mainExcel.to_sql(database, conn, if_exists="append", index=False)
+    
+
+    conn.close()
+
+
+
+
 # Reads any column of an excel worksheet and gives out a list of the contents of the rows of that worksheet
 def loadOneColumnRowDataAsList(filename, sheetname, column):
     listFromColumn = pd.read_excel(filename, sheet_name=sheetname, usecols=column, header=None, index_col=0) #Read column A / No header - Take first row NOT as replacement header / No index / returns Dataframe
@@ -405,6 +427,7 @@ def updateCompanyOverview(updateNotExistingSymbols):
 
 def update_balance_sheet_quarterly(updateNotExistingSymbols):
     stocksNotExisting = []
+    allStockBalanceQuarterlyData = pd.DataFrame()
     counter = 0
         
     for stock in updateNotExistingSymbols:
@@ -415,25 +438,29 @@ def update_balance_sheet_quarterly(updateNotExistingSymbols):
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
             stockBalanceData["Downloaded_at_quarter"] = timestampQuarter()
-            
+            stockBalanceData.insert(0, "Symbol", stock)
+
             # Check and if not Dataframe datatype, convert to Dataframe
             if not isinstance(stockBalanceData, pd.DataFrame):
                 stockBalanceData = pd.DataFrame(stockBalanceData)
             
-            stockBalanceData.insert(0, "Symbol", stock)
+            allStockBalanceQuarterlyData = pd.concat([allStockBalanceQuarterlyData, stockBalanceData], ignore_index=True)
+            
             APIRequestDelay()
         
         except ValueError:
             stocksNotExisting.append(stock)
             print("Error" + str(counter) + " " + str(stock))
             counter = counter + 1
+            APIRequestDelay()
             pass
         
-    return stockBalanceData, stocksNotExisting 
+    return allStockBalanceQuarterlyData , stocksNotExisting 
 
 
 def update_balance_sheet_annual(updateNotExistingSymbols):
     stocksNotExisting = []
+    allStockBalanceAnnuallyData = pd.DataFrame()
     counter = 0
         
     for stock in updateNotExistingSymbols:
@@ -450,6 +477,8 @@ def update_balance_sheet_annual(updateNotExistingSymbols):
                 stockBalanceData = pd.DataFrame(stockBalanceData)
             
             stockBalanceData.insert(0, "Symbol", stock)
+
+            allStockBalanceAnnuallyData = pd.concat([allStockBalanceAnnuallyData, stockBalanceData], ignore_index=True)
             APIRequestDelay()
         
         except ValueError:
@@ -458,11 +487,12 @@ def update_balance_sheet_annual(updateNotExistingSymbols):
             counter = counter + 1
             pass
         
-    return stockBalanceData, stocksNotExisting 
+    return allStockBalanceAnnuallyData, stocksNotExisting 
 
 
 def update_income_statement_quarterly(updateNotExistingSymbols):
     stocksNotExisting = []
+    allStockIncomeQuarterlyData = pd.DataFrame()
     counter = 0
         
     for stock in updateNotExistingSymbols:
@@ -479,6 +509,8 @@ def update_income_statement_quarterly(updateNotExistingSymbols):
                 stockBalanceData = pd.DataFrame(stockBalanceData)
             
             stockBalanceData.insert(0, "Symbol", stock)
+
+            allStockIncomeQuarterlyData = pd.concat([allStockIncomeQuarterlyData, stockBalanceData], ignore_index=True)
             APIRequestDelay()
         
         except ValueError:
@@ -487,12 +519,13 @@ def update_income_statement_quarterly(updateNotExistingSymbols):
             counter = counter + 1
             pass
         
-    return stockBalanceData, stocksNotExisting  
+    return allStockIncomeQuarterlyData, stocksNotExisting  
 
 
 
 def update_income_statement_annual(updateNotExistingSymbols):
     stocksNotExisting = []
+    allStockIncomeAnnuallyData = pd.DataFrame()
     counter = 0
         
     for stock in updateNotExistingSymbols:
@@ -509,6 +542,8 @@ def update_income_statement_annual(updateNotExistingSymbols):
                 stockBalanceData = pd.DataFrame(stockBalanceData)
             
             stockBalanceData.insert(0, "Symbol", stock)
+
+            allStockIncomeAnnuallyData = pd.concat([allStockIncomeAnnuallyData, stockBalanceData], ignore_index=True)
             APIRequestDelay()
         
         except ValueError:
@@ -517,11 +552,12 @@ def update_income_statement_annual(updateNotExistingSymbols):
             counter = counter + 1
             pass
         
-    return stockBalanceData, stocksNotExisting  
+    return allStockIncomeAnnuallyData, stocksNotExisting  
 
 
 def getTimeSeriesData(updateNotExistingSymbols):
     stocksNotExisting = []
+    allStockTimeSeries = pd.DataFrame()
     counter = 0
 
     for stock in updateNotExistingSymbols:
@@ -544,6 +580,8 @@ def getTimeSeriesData(updateNotExistingSymbols):
             dailySeriesPerStock["date"] = dailySeriesPerStock["date"].dt.date
 
             dailySeriesPerStock.insert(0, "Symbol", stock)
+
+            allStockTimeSeries = pd.concat([allStockTimeSeries, dailySeriesPerStock], ignore_index=True)
             APIRequestDelay()
         
         except ValueError:
@@ -553,7 +591,7 @@ def getTimeSeriesData(updateNotExistingSymbols):
             pass
         
 
-    return dailySeriesPerStock, stocksNotExisting  
+    return allStockTimeSeries, stocksNotExisting  
 
 
 """
@@ -597,6 +635,7 @@ def writeToExcel(mainExcel, worksheet):
     # Speichere die Änderungen
     book.save(excelPath)
 
+
 def readFromDataBase(database):
     # Connection to Database
     conn = sql.connect("mainDatabase.db")
@@ -620,7 +659,6 @@ def readFromDataBase(database):
         conn.close()
 
 
-######## TO-DO: Update based on Database column symbols, NOT the excel sheet. Write new funcs for all features overview/balance/income
 def writeToDataBase(mainExcel, database):
 
     conn = sql.connect("mainDatabase.db")
@@ -637,12 +675,12 @@ def sortDatabaseBySymbolName(table):
     cursor = conn.cursor()
 
     # Create temp table differently sorted
-    cursor.execute(f"CREATE TEMPORARY TABLE temp_{table} AS SELECT * FROM {table} ORDER BY Symbol ASC")
+    cursor.execute(f"CREATE TABLE sorted_{table} AS SELECT * FROM {table} ORDER BY Symbol ASC")
     
     # Delete old table
     cursor.execute(f"DROP TABLE {table}")
     
-    cursor.execute(f"ALTER TABLE temp_{table} RENAME TO {table}")
+    cursor.execute(f"ALTER TABLE sorted_{table} RENAME TO {table}")
 
 
     conn.commit()
