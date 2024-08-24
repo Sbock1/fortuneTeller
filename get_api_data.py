@@ -14,16 +14,10 @@ def initializeExcelSheet():
     gil.deleletExcelPredefinedSheet()
 
 
-def initializeSQLDatabase(): # TO-DO
-    pass
-
-
 def sortAllTables():
     
     for table in ["Overview", "Balance_Quarterly", "Balance_Yearly", "Income_Quarterly", "Income_Yearly", "Stocks_Daily"]:
         gil.sortDatabaseBySymbolName(table)
-
-sortAllTables()
 
 
 def createWindow():
@@ -205,15 +199,16 @@ def loadDailyStockDatabase(amount):
 #load_balance_quartely(1)
 #loadBalanceQuarterlyDatabase(2)
 #load_balance_annual(1)
-#loadBalanceAnnuallyDatabase(2)
+#loadBalanceAnnuallyDatabase(4)
 #load_income_quartely(1)
 #loadIncomeQuarterlyDatabase(2)
 #load_income_annual(1)
 #loadIncomeAnnuallyDatabase(2)
 #load_daily_stock(1)
-loadDailyStockDatabase(1)
-
-
+#loadDailyStockDatabase(6)
+gil.createAnalysisYearlyTable()
+#gil.createAnalysisQuarterlyTable()
+#sortAllTables()
 '''
 def load_daily_stock_prices():
     stock_list_new = gil.load_stock_symbol_list()
