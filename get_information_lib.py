@@ -280,59 +280,76 @@ def deleletExcelPredefinedSheet():
 
 ############################# TO-DO-
 def createAnalysisYearlyTable():
-    conn = sql.connect("mainDatabase.db")
-    cursor = conn.cursor()
+    try:
+        conn = sql.connect("mainDatabase.db")
+        cursor = conn.cursor()
 
-    # Create table IF NOT existing already
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Analysis_Yearly (
-            Symbol TEXT,
-            fiscalDateEnding DATE,
-            Equity_Ratio REAL,
-            Debt_Ratio REAL,
-            Current_Ratio REAL,
-            Quick_Ratio REAL,
-            Debt_to_Equity_Ratio REAL,
-            Working_Capital REAL,
-            Net_Working_Capital_Ratio REAL,
-            Cash_Ratio REAL,
-            PRIMARY KEY (Symbol, fiscalDateEnding)
-        );
-    ''')
-    # Data calculation from Balance_Yearly
-    cursor.execute('''
-        INSERT OR REPLACE INTO 
-            Analysis_Yearly (
-                Symbol,
-                fiscalDateEnding, 
-                Equity_Ratio, 
-                Debt_Ratio,  
-                Cash_Ratio,
-                Quick_Ratio,
-                Current_Ratio,
-                Debt_to_Equity_Ratio,   
-                Working_Capital,
-                Net_Working_Capital_Ratio
+        # Tabelle erstellen
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Analysis_Yearly (
+                Symbol TEXT,
+                fiscalDateEnding DATE,
+                Equity_Ratio REAL,
+                Debt_Ratio REAL,
+                Current_Ratio REAL,
+                Quick_Ratio REAL,
+                Debt_to_Equity_Ratio REAL,
+                Working_Capital REAL,
+                Net_Working_Capital_Ratio REAL,
+                Cash_Ratio REAL,
+                Asset_Turnover REAL,
+                PRIMARY KEY (Symbol, fiscalDateEnding)
+            );
+        ''')
+
+        # Daten einfügen
+        cursor.execute('''
+            INSERT OR REPLACE INTO 
+                Analysis_Yearly (
+                    Symbol,
+                    fiscalDateEnding, 
+                    Equity_Ratio, 
+                    Debt_Ratio,
+                    Debt_to_Equity_Ratio,  
+                    Cash_Ratio,
+                    Quick_Ratio,
+                    Current_Ratio,
+                    Working_Capital,
+                    Net_Working_Capital_Ratio,
+                    Asset_Turnover
                 )
-        SELECT
-            Symbol,
-            fiscalDateEnding,
-            ROUND((totalShareholderEquity * 1.00) / totalAssets, 3) AS Equity_Ratio,
-            ROUND((totalLiabilities * 1.00) / totalAssets, 3) AS Debt_Ratio,
-            ROUND((totalCurrentAssets * 1.00) / totalCurrentLiabilities, 3) AS Current_Ratio,
-            ROUND(((totalCurrentAssets - inventory) * 1.00) / totalCurrentLiabilities, 3) AS Quick_Ratio,
-            ROUND((totalLiabilities * 1.00) / totalShareholderEquity, 3) AS Debt_to_Equity_Ratio,
-            (totalCurrentAssets - totalCurrentLiabilities) AS Working_Capital,
-            ROUND(((totalCurrentAssets - totalCurrentLiabilities) * 1.00) / totalAssets, 3) AS Net_Working_Capital_Ratio,
-            ROUND((cashAndShortTermInvestments * 1.00) / totalCurrentLiabilities, 3) AS Cash_Ratio
-        FROM Balance_Yearly
-        WHERE 
-            totalAssets IS NOT NULL AND 
-            totalCurrentLiabilities IS NOT NULL AND
-            totalShareholderEquity IS NOT NULL;
-    ''')
-    conn.commit()
-    conn.close()
+            SELECT
+                b.Symbol,
+                b.fiscalDateEnding,
+                ROUND((b.totalShareholderEquity * 1.00) / b.totalAssets, 3) AS Equity_Ratio,
+                ROUND((b.totalLiabilities * 1.00) / b.totalAssets, 3) AS Debt_Ratio,
+                ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Current_Ratio,
+                ROUND(((b.totalCurrentAssets - b.inventory) * 1.00) / b.totalCurrentLiabilities, 3) AS Quick_Ratio,
+                ROUND((b.totalLiabilities * 1.00) / b.totalShareholderEquity, 3) AS Debt_to_Equity_Ratio,
+                (b.totalCurrentAssets - b.totalCurrentLiabilities) AS Working_Capital,
+                ROUND(((b.totalCurrentAssets - b.totalCurrentLiabilities) * 1.00) / b.totalAssets, 3) AS Net_Working_Capital_Ratio,
+                ROUND((b.cashAndShortTermInvestments * 1.00) / b.totalCurrentLiabilities, 3) AS Cash_Ratio,
+                ROUND((i.totalRevenue * 1.00) / b.totalAssets, 3) AS Asset_Turnover
+            FROM 
+                Balance_Yearly b
+            INNER JOIN 
+                Income_Yearly i
+            ON 
+                b.Symbol = i.Symbol AND b.fiscalDateEnding = i.fiscalDateEnding
+            WHERE 
+                b.totalAssets IS NOT NULL AND 
+                b.totalCurrentLiabilities IS NOT NULL AND
+                b.totalShareholderEquity IS NOT NULL;
+        ''')
+
+        conn.commit()
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    finally:
+        conn.close()
+
 
 def createAnalysisQuarterlyTable():
     conn = sql.connect("mainDatabase.db")

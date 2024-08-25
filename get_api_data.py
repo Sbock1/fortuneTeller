@@ -203,7 +203,7 @@ def loadDailyStockDatabase(amount):
 #load_income_quartely(1)
 #loadIncomeQuarterlyDatabase(2)
 #load_income_annual(1)
-#loadIncomeAnnuallyDatabase(2)
+#loadIncomeAnnuallyDatabase(1)
 #load_daily_stock(1)
 #loadDailyStockDatabase(6)
 gil.createAnalysisYearlyTable()
