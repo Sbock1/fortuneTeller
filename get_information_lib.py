@@ -296,8 +296,15 @@ def createAnalysisYearlyTable():
                 Debt_to_Equity_Ratio REAL,
                 Working_Capital REAL,
                 Net_Working_Capital_Ratio REAL,
+                Days_Inventory_Outstanding REAL,
+                Days_Sales_Outstanding REAL,
+                Days_Payable_Outstanding REAL,
+                Cash_Conversion_Cycle REAL,
                 Cash_Ratio REAL,
                 Asset_Turnover REAL,
+                Equity_to_fixed_Assests_Ratio REAL,
+                Extended_Coverage_Ratio REAL,
+                Extended_Asset_Coverage_Ratio REAL,
                 PRIMARY KEY (Symbol, fiscalDateEnding)
             );
         ''')
@@ -310,13 +317,20 @@ def createAnalysisYearlyTable():
                     fiscalDateEnding, 
                     Equity_Ratio, 
                     Debt_Ratio,
-                    Debt_to_Equity_Ratio,  
-                    Cash_Ratio,
-                    Quick_Ratio,
                     Current_Ratio,
+                    Quick_Ratio,
+                    Debt_to_Equity_Ratio,  
                     Working_Capital,
                     Net_Working_Capital_Ratio,
-                    Asset_Turnover
+                    Days_Inventory_Outstanding,
+                    Days_Sales_Outstanding,
+                    Days_Payable_Outstanding,
+                    Cash_Conversion_Cycle,
+                    Cash_Ratio,
+                    Asset_Turnover,
+                    Equity_to_fixed_Assests_Ratio,
+                    Extended_Coverage_Ratio,
+                    Extended_Asset_Coverage_Ratio 
                 )
             SELECT
                 b.Symbol,
@@ -328,8 +342,15 @@ def createAnalysisYearlyTable():
                 ROUND((b.totalLiabilities * 1.00) / b.totalShareholderEquity, 3) AS Debt_to_Equity_Ratio,
                 (b.totalCurrentAssets - b.totalCurrentLiabilities) AS Working_Capital,
                 ROUND(((b.totalCurrentAssets - b.totalCurrentLiabilities) * 1.00) / b.totalAssets, 3) AS Net_Working_Capital_Ratio,
+                ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Inventory_Outstanding,
+                ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) AS Days_Sales_Outstanding,
+                ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Payable_Outstanding,
+                (ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) + ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) - ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3)) AS Cash_Conversion_Cycle,
                 ROUND((b.cashAndShortTermInvestments * 1.00) / b.totalCurrentLiabilities, 3) AS Cash_Ratio,
-                ROUND((i.totalRevenue * 1.00) / b.totalAssets, 3) AS Asset_Turnover
+                ROUND((i.totalRevenue * 1.00) / b.totalAssets, 3) AS Asset_Turnover,
+                ROUND((b.totalShareholderEquity * 1.00) / b.totalNonCurrentAssets, 3) AS Equity_to_fixed_Assests_Ratio,
+                ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalNonCurrentAssets, 3) AS Extended_Coverage_Ratio,
+                ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalAssets, 3) AS Extended_Asset_Coverage_Ratio
             FROM 
                 Balance_Yearly b
             INNER JOIN 
@@ -339,6 +360,7 @@ def createAnalysisYearlyTable():
             WHERE 
                 b.totalAssets IS NOT NULL AND 
                 b.totalCurrentLiabilities IS NOT NULL AND
+                i.costofGoodsAndServicesSold IS NOT NULL AND
                 b.totalShareholderEquity IS NOT NULL;
         ''')
 

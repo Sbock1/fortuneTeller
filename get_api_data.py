@@ -28,7 +28,7 @@ def createWindow():
     # Fenstergröße setzen
     root.geometry("400x300")
     # Ein Label-Widget hinzufügen
-    label = tk.Label(root, text="You can decide how many stock overview data you want to download. Currently each row will take 18 seconds.")
+    label = tk.Label(root, text="You can decide how many stock overview data you want to download. Currently each row will take 1 seconds.")
     label.pack(pady=20)  # Pack-Layout-Manager verwenden
         
     # Ein Button-Widget hinzufügen
@@ -59,7 +59,6 @@ def loadOverviewExcel(amount):
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
     stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(updateNotExistingSymbols[0:amount])
     print(f"Step 2: Creation DataFrame with update of mainExcel with {amount} entries")
-    #gil.writeToDataBase(stockOverviewData, "Overview")
     gil.writeToExcel(stockOverviewData, "Overview")
     #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
@@ -199,11 +198,11 @@ def loadDailyStockDatabase(amount):
 #load_balance_quartely(1)
 #loadBalanceQuarterlyDatabase(2)
 #load_balance_annual(1)
-#loadBalanceAnnuallyDatabase(4)
+#loadBalanceAnnuallyDatabase(11)
 #load_income_quartely(1)
 #loadIncomeQuarterlyDatabase(2)
 #load_income_annual(1)
-#loadIncomeAnnuallyDatabase(1)
+#loadIncomeAnnuallyDatabase(11)
 #load_daily_stock(1)
 #loadDailyStockDatabase(6)
 gil.createAnalysisYearlyTable()
