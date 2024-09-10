@@ -15,6 +15,7 @@ import tkinter as tk
 import os
 
 ################################################################## 
+# Author: Sebastian Bock (Sbock)
 # Global variables based on API requirements
 API_key="HNNMDBOG55BREC5P" #Account API key to validate access
 time_delay = 1 #The free API access only allows 25 requests per day without any delay, but for test
@@ -28,7 +29,8 @@ TimeSeriesPull = TimeSeries(key=API_key, output_format="pandas")
 
 ##Update first row -> needs to be called separately, not included yet in general API request download -> TO-DO: Better implementation
 def insertFirstRowColumnNames():
-    firstRowData = FundamentalDataAPIPull.get_company_overview("A")[0]
+    stock = "A"
+    firstRowData = FundamentalDataAPIPull.get_company_overview(stock)[0]
       
     # Adding of additional columns at the end
     firstRowData["Downloaded_at_datetime"] = timestampToday()
@@ -257,6 +259,45 @@ def insertFirstRowColumnNamesStockDaily():
     APIRequestDelay()
 
 
+def insertFirstRowColumnNamesCashflowYearly():
+    # Load balance data from Alpha Vantage
+    stock = "A"
+    firstRowData = FundamentalDataAPIPull.get_cash_flow_annual(stock)[0]
+    
+    # Adding of additional columns at the end
+    firstRowData["Downloaded_at_datetime"] = timestampToday()
+    firstRowData["Downloaded_at_quarter"] = timestampQuarter()
+
+    # Check and if not Dataframe datatype, convert to Dataframe
+    if not isinstance(firstRowData, pd.DataFrame):
+        firstRowData = pd.DataFrame([firstRowData])
+
+    firstRowData.insert(0, "Symbol", stock)
+
+    # Path of file
+    excel_path = "output.xlsx"
+
+    # Check if file exists
+    if not os.path.exists(excel_path):
+        wb = Workbook()
+        wb.save(excel_path)
+
+    book = load_workbook(excel_path)
+
+    # Check if worksheet exists
+    if "Cashflow_Yearly" not in book.sheetnames:
+        balanceSheet = book.create_sheet("Cashflow_Yearly")
+    else:
+        balanceSheet = book["Cashflow_Yearly"]
+
+    for row in dataframe_to_rows(firstRowData, index=False, header=True):
+        balanceSheet.append(row)
+
+    # Speichere die Änderungen
+    book.save(excel_path)
+    APIRequestDelay()
+
+
 def deleletExcelPredefinedSheet():
     # Path of file
     excel_path = "output.xlsx"
@@ -289,20 +330,32 @@ def createAnalysisYearlyTable():
             CREATE TABLE IF NOT EXISTS Analysis_Yearly (
                 Symbol TEXT,
                 fiscalDateEnding DATE,
+                Gross_Profit_Margin,
+                Operating_Profit_Margin,
+                Net_Profit_Margin,
+                Return_on_Assets,
+                Return_on_Equity,
+                Return_on_Investment,
                 Equity_Ratio REAL,
                 Debt_Ratio REAL,
+                Interest_Coverage_Ratio REAL,
+                Debt_Service_Coverage_Ratio REAL,
+                Leverage_Ratio REAL,
+                Debt_to_Capital_Ratio REAL,
                 Current_Ratio REAL,
                 Quick_Ratio REAL,
                 Debt_to_Equity_Ratio REAL,
                 Working_Capital REAL,
+                Working_Capital_Ratio REAL,
                 Net_Working_Capital_Ratio REAL,
                 Days_Inventory_Outstanding REAL,
                 Days_Sales_Outstanding REAL,
                 Days_Payable_Outstanding REAL,
                 Cash_Conversion_Cycle REAL,
                 Cash_Ratio REAL,
+                Operating_Cashflow_Ratio REAL,
                 Asset_Turnover REAL,
-                Equity_to_fixed_Assests_Ratio REAL,
+                Equity_to_fixed_Assets_Ratio REAL,
                 Extended_Coverage_Ratio REAL,
                 Extended_Asset_Coverage_Ratio REAL,
                 PRIMARY KEY (Symbol, fiscalDateEnding)
@@ -315,40 +368,65 @@ def createAnalysisYearlyTable():
                 Analysis_Yearly (
                     Symbol,
                     fiscalDateEnding, 
+                    Gross_Profit_Margin,
+                    Operating_Profit_Margin,
+                    Net_Profit_Margin,
+                    Return_on_Assets,
+                    Return_on_Equity,
+                    Return_on_Investment,
                     Equity_Ratio, 
                     Debt_Ratio,
+                    Interest_Coverage_Ratio,
+                    Debt_Service_Coverage_Ratio,
+                    Leverage_Ratio,
+                    Debt_to_Capital_Ratio,
                     Current_Ratio,
                     Quick_Ratio,
                     Debt_to_Equity_Ratio,  
                     Working_Capital,
+                    Working_Capital_Ratio,
                     Net_Working_Capital_Ratio,
                     Days_Inventory_Outstanding,
                     Days_Sales_Outstanding,
                     Days_Payable_Outstanding,
                     Cash_Conversion_Cycle,
                     Cash_Ratio,
+                    Operating_Cashflow_Ratio,
                     Asset_Turnover,
-                    Equity_to_fixed_Assests_Ratio,
+                    Equity_to_fixed_Assets_Ratio,
                     Extended_Coverage_Ratio,
                     Extended_Asset_Coverage_Ratio 
                 )
             SELECT
                 b.Symbol,
                 b.fiscalDateEnding,
+                ROUND((i.grossProfit * 1.00) / i.totalRevenue, 3) AS Gross_Profit_Margin,
+                ROUND((i.operatingIncome * 1.00) / i.totalRevenue, 3) AS Operating_Profit_Margin,
+                ROUND((i.netIncome * 1.00) / i.totalRevenue, 3) AS Net_Profit_Margin,
+                ROUND((i.netIncome * 1.00) / b.totalAssets, 3) AS Return_on_Assets,
+                ROUND((i.netIncome * 1.00) / b.totalShareholderEquity, 3) AS Return_on_Equity,
+                ROUND((i.netIncome * 1.00) / (b.totalAssets - b.totalLiabilities), 3) AS Return_on_Investment,
+                       
                 ROUND((b.totalShareholderEquity * 1.00) / b.totalAssets, 3) AS Equity_Ratio,
                 ROUND((b.totalLiabilities * 1.00) / b.totalAssets, 3) AS Debt_Ratio,
+                ROUND((i.operatingIncome * 1.00) / i.interestExpense, 3) AS Interest_Coverage_Ratio,
+                ROUND((i.operatingIncome * 1.00) / i.interestAndDebtExpense, 3) AS Debt_Service_Coverage_Ratio,
+                ROUND(b.totalLiabilities * 1.00 / b.totalShareholderEquity, 3) AS Leverage_Ratio,
+                ROUND(b.totalLiabilities * 1.00 / (b.totalLiabilities + b.totalShareholderEquity), 3) AS Debt_to_Capital_Ratio,
                 ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Current_Ratio,
                 ROUND(((b.totalCurrentAssets - b.inventory) * 1.00) / b.totalCurrentLiabilities, 3) AS Quick_Ratio,
                 ROUND((b.totalLiabilities * 1.00) / b.totalShareholderEquity, 3) AS Debt_to_Equity_Ratio,
                 (b.totalCurrentAssets - b.totalCurrentLiabilities) AS Working_Capital,
-                ROUND(((b.totalCurrentAssets - b.totalCurrentLiabilities) * 1.00) / b.totalAssets, 3) AS Net_Working_Capital_Ratio,
+                ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Working_Capital_Ratio,
+                ROUND(((b.totalCurrentAssets - b.totalCurrentLiabilities) * 1.00) / b.totalCurrentLiabilities, 3) AS Net_Working_Capital_Ratio,
                 ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Inventory_Outstanding,
                 ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) AS Days_Sales_Outstanding,
                 ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Payable_Outstanding,
                 (ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) + ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) - ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3)) AS Cash_Conversion_Cycle,
                 ROUND((b.cashAndShortTermInvestments * 1.00) / b.totalCurrentLiabilities, 3) AS Cash_Ratio,
+                ROUND((c.operatingCashflow * 1.00) / b.totalCurrentLiabilities, 3) AS Operating_Cashflow_Ratio,
                 ROUND((i.totalRevenue * 1.00) / b.totalAssets, 3) AS Asset_Turnover,
-                ROUND((b.totalShareholderEquity * 1.00) / b.totalNonCurrentAssets, 3) AS Equity_to_fixed_Assests_Ratio,
+                ROUND((b.totalShareholderEquity * 1.00) / b.totalNonCurrentAssets, 3) AS Equity_to_fixed_Assets_Ratio,
                 ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalNonCurrentAssets, 3) AS Extended_Coverage_Ratio,
                 ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalAssets, 3) AS Extended_Asset_Coverage_Ratio
             FROM 
@@ -357,6 +435,10 @@ def createAnalysisYearlyTable():
                 Income_Yearly i
             ON 
                 b.Symbol = i.Symbol AND b.fiscalDateEnding = i.fiscalDateEnding
+            INNER JOIN
+                Cashflow_Yearly c
+            ON
+                b.Symbol = c.Symbol AND b.fiscalDateEnding = c.fiscalDateEnding 
             WHERE 
                 b.totalAssets IS NOT NULL AND 
                 b.totalCurrentLiabilities IS NOT NULL AND
@@ -365,14 +447,13 @@ def createAnalysisYearlyTable():
         ''')
 
         conn.commit()
-
+        print("Analysis_Yearly Tabelle erfolgreich erstellt und Daten eingefügt.")
     except Exception as e:
-        print(f"An error occurred: {e}")
-
+        print(f"Fehler bei der Erstellung der Tabelle: {e}")
     finally:
         conn.close()
 
-
+    
 def createAnalysisQuarterlyTable():
     conn = sql.connect("mainDatabase.db")
     cursor = conn.cursor()
@@ -470,7 +551,7 @@ def getExcelSheetInformation(filename, sheetname):
     excelSymbolsExisting = list(set(mainSheetDataframe["Symbol"]))
     excelQuartersExisting = list(mainSheetDataframe["Downloaded_at_quarter"])
     
-    return mainSheetDataframe, excelSymbolsExisting, excelQuartersExisting
+    return excelSymbolsExisting, excelQuartersExisting
 
 
 
@@ -694,6 +775,39 @@ def update_income_statement_annual(updateNotExistingSymbols):
     return allStockIncomeAnnuallyData, stocksNotExisting  
 
 
+def updateCashflowStatementAnually(updateNotExistingSymbols):
+    stocksNotExisting = []
+    allStockCashflowAnuallyData = pd.DataFrame()
+    counter = 0
+        
+    for stock in updateNotExistingSymbols:
+        
+        try:
+            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            stockBalanceData = FundamentalDataAPIPull.get_cash_flow_annual(stock)[0]
+            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
+            stockBalanceData["Downloaded_at_datetime"] = timestampToday()
+            stockBalanceData["Downloaded_at_quarter"] = timestampQuarter()
+            
+            # Check and if not Dataframe datatype, convert to Dataframe
+            if not isinstance(stockBalanceData, pd.DataFrame):
+                stockBalanceData = pd.DataFrame(stockBalanceData)
+            
+            stockBalanceData.insert(0, "Symbol", stock)
+
+            allStockCashflowAnuallyData = pd.concat([allStockCashflowAnuallyData, stockBalanceData], ignore_index=True)
+            APIRequestDelay()
+        
+        except ValueError:
+            stocksNotExisting.append(stock)
+            print("Error" + str(counter) + " " + str(stock))
+            counter = counter + 1
+            pass
+        
+    return allStockCashflowAnuallyData, stocksNotExisting 
+    
+
+
 def getTimeSeriesData(updateNotExistingSymbols):
     stocksNotExisting = []
     allStockTimeSeries = pd.DataFrame()
@@ -864,18 +978,6 @@ def deleteNoneUpdatableSymbols(symbol_list, stocksNotExisting):
 
 
 """
-
-def prep_df_for_calc(df_to_prep):
-    df_to_prep = df_to_prep.dropna()
-    for elem in range(len(df_to_prep)):
-        if df_to_prep[elem] == "None":
-            df_to_prep[elem] = 1
-        if type(amount_stocks[elem]) == str:
-            df_to_prep[elem] = float(df_to_prep[elem])
-        if type(amount_stocks[elem]) == float:
-            df_to_prep[elem] = int(df_to_prep[elem])
-
-    return df_to_prep
 
 def calc_price_per_share():
     book = load_workbook("output.xlsx")
