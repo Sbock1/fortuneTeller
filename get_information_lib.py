@@ -321,137 +321,166 @@ def deleletExcelPredefinedSheet():
 
 ############################# TO-DO-
 def createAnalysisYearlyTable():
-    try:
-        conn = sql.connect("mainDatabase.db")
-        cursor = conn.cursor()
+    
+    conn = sql.connect("mainDatabase.db")
+    cursor = conn.cursor()
 
-        # Tabelle erstellen
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS Analysis_Yearly (
-                Symbol TEXT,
-                fiscalDateEnding DATE,
+    # Tabelle erstellen
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Analysis_Yearly (
+            Symbol TEXT,
+            fiscalDateEnding DATE,
+            Earnings_Per_Share REAL,
+            Price_to_Earnings_Ratio REAL,
+            Dividend_Yield REAL,
+                        
+            Gross_Profit_Margin REAL,
+            Operating_Profit_Margin REAL,
+            Net_Profit_Margin REAL,
+            Return_on_Assets REAL,
+            Return_on_Equity REAL,
+            Return_on_Investment REAL,
+            Equity_Ratio REAL,
+            Debt_Ratio REAL,
+            Interest_Coverage_Ratio REAL,
+            Debt_Service_Coverage_Ratio REAL,
+            Leverage_Ratio REAL,
+            Debt_to_Capital_Ratio REAL,
+            Short_term_Debt_Ratio REAL,
+            Long_term_Debt_Ratio REAL,
+            Current_Ratio REAL,
+            Quick_Ratio REAL,
+            Debt_to_Equity_Ratio REAL,
+            Working_Capital REAL,
+            Working_Capital_Ratio REAL,
+            Net_Working_Capital_Ratio REAL,
+            Days_Inventory_Outstanding REAL,
+            Days_Sales_Outstanding REAL,
+            Days_Payable_Outstanding REAL,
+            Cash_Conversion_Cycle REAL,
+            Cash_Ratio REAL,
+            Operating_Cashflow_Ratio REAL,
+            Asset_Turnover REAL,
+            Equity_to_fixed_Assets_Ratio REAL,
+            Extended_Coverage_Ratio REAL,
+            Extended_Asset_Coverage_Ratio REAL,
+            PRIMARY KEY (Symbol, fiscalDateEnding)
+        );
+    ''')
+
+    # Daten einfügen
+    cursor.execute('''
+        INSERT OR REPLACE INTO 
+            Analysis_Yearly (
+                Symbol,
+                fiscalDateEnding, 
+                Earnings_Per_Share,
+                Price_to_Earnings_Ratio,
+                Dividend_Yield,
+                   
                 Gross_Profit_Margin,
                 Operating_Profit_Margin,
                 Net_Profit_Margin,
                 Return_on_Assets,
                 Return_on_Equity,
                 Return_on_Investment,
-                Equity_Ratio REAL,
-                Debt_Ratio REAL,
-                Interest_Coverage_Ratio REAL,
-                Debt_Service_Coverage_Ratio REAL,
-                Leverage_Ratio REAL,
-                Debt_to_Capital_Ratio REAL,
-                Current_Ratio REAL,
-                Quick_Ratio REAL,
-                Debt_to_Equity_Ratio REAL,
-                Working_Capital REAL,
-                Working_Capital_Ratio REAL,
-                Net_Working_Capital_Ratio REAL,
-                Days_Inventory_Outstanding REAL,
-                Days_Sales_Outstanding REAL,
-                Days_Payable_Outstanding REAL,
-                Cash_Conversion_Cycle REAL,
-                Cash_Ratio REAL,
-                Operating_Cashflow_Ratio REAL,
-                Asset_Turnover REAL,
-                Equity_to_fixed_Assets_Ratio REAL,
-                Extended_Coverage_Ratio REAL,
-                Extended_Asset_Coverage_Ratio REAL,
-                PRIMARY KEY (Symbol, fiscalDateEnding)
-            );
-        ''')
+                Equity_Ratio, 
+                Debt_Ratio,
+                Interest_Coverage_Ratio,
+                Debt_Service_Coverage_Ratio,
+                Leverage_Ratio,
+                Debt_to_Capital_Ratio,
+                Short_term_Debt_Ratio,
+                Long_term_Debt_Ratio,
+                Current_Ratio,
+                Quick_Ratio,
+                Debt_to_Equity_Ratio,  
+                Working_Capital,
+                Working_Capital_Ratio,
+                Net_Working_Capital_Ratio,
+                Days_Inventory_Outstanding,
+                Days_Sales_Outstanding,
+                Days_Payable_Outstanding,
+                Cash_Conversion_Cycle,
+                Cash_Ratio,
+                Operating_Cashflow_Ratio,
+                Asset_Turnover,
+                Equity_to_fixed_Assets_Ratio,
+                Extended_Coverage_Ratio,
+                Extended_Asset_Coverage_Ratio 
+            )
+        SELECT
+            b.Symbol,
+            b.fiscalDateEnding,
+            ROUND((i.netIncome * 1.00) / b.commonstockSharesOutstanding, 3) AS Earnings_Per_Share,
+            ROUND((stockPrice * 1.00) / ((i.netIncome * 1.00) / b.commonstockSharesOutstanding), 3) AS Price_to_Earnings_Ratio,
+            ROUND((c.dividendPayout * 1.00) / sd.close, 3) AS Dividend_Yield,
+                   
+            ROUND((i.grossProfit * 1.00) / i.totalRevenue, 3) AS Gross_Profit_Margin,
+            ROUND((i.operatingIncome * 1.00) / i.totalRevenue, 3) AS Operating_Profit_Margin,
+            ROUND((i.netIncome * 1.00) / i.totalRevenue, 3) AS Net_Profit_Margin,
+            ROUND((i.netIncome * 1.00) / b.totalAssets, 3) AS Return_on_Assets,
+            ROUND((i.netIncome * 1.00) / b.totalShareholderEquity, 3) AS Return_on_Equity,
+            ROUND((i.netIncome * 1.00) / (b.totalAssets - b.totalLiabilities), 3) AS Return_on_Investment,
+                    
+            ROUND((b.totalShareholderEquity * 1.00) / b.totalAssets, 3) AS Equity_Ratio,
+            ROUND((b.totalLiabilities * 1.00) / b.totalAssets, 3) AS Debt_Ratio,
+            ROUND((i.operatingIncome * 1.00) / i.interestExpense, 3) AS Interest_Coverage_Ratio,
+            ROUND((i.operatingIncome * 1.00) / i.interestAndDebtExpense, 3) AS Debt_Service_Coverage_Ratio,
+            ROUND(b.totalLiabilities * 1.00 / b.totalShareholderEquity, 3) AS Leverage_Ratio,
+            ROUND(b.totalLiabilities * 1.00 / (b.totalLiabilities + b.totalShareholderEquity), 3) AS Debt_to_Capital_Ratio,
+            ROUND(b.totalCurrentLiabilities * 1.00 / b.totalAssets, 3) AS Short_term_Debt_Ratio,
+            ROUND(b.longTermDebt * 1.00 / b.totalAssets, 3) AS Long_term_Debt_Ratio,
+       
+            ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Current_Ratio,
+            ROUND(((b.totalCurrentAssets - b.inventory) * 1.00) / b.totalCurrentLiabilities, 3) AS Quick_Ratio,
+            ROUND((b.totalLiabilities * 1.00) / b.totalShareholderEquity, 3) AS Debt_to_Equity_Ratio,
+            (b.totalCurrentAssets - b.totalCurrentLiabilities) AS Working_Capital,
+            ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Working_Capital_Ratio,
+            ROUND(((b.totalCurrentAssets - b.totalCurrentLiabilities) * 1.00) / b.totalCurrentLiabilities, 3) AS Net_Working_Capital_Ratio,
+            ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Inventory_Outstanding,
+            ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) AS Days_Sales_Outstanding,
+            ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Payable_Outstanding,
+            (ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) + ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) - ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3)) AS Cash_Conversion_Cycle,
+            ROUND((b.cashAndShortTermInvestments * 1.00) / b.totalCurrentLiabilities, 3) AS Cash_Ratio,
+            ROUND((c.operatingCashflow * 1.00) / b.totalCurrentLiabilities, 3) AS Operating_Cashflow_Ratio,
+            ROUND((i.totalRevenue * 1.00) / b.totalAssets, 3) AS Asset_Turnover,
+            ROUND((b.totalShareholderEquity * 1.00) / b.totalNonCurrentAssets, 3) AS Equity_to_fixed_Assets_Ratio,
+            ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalNonCurrentAssets, 3) AS Extended_Coverage_Ratio,
+            ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalAssets, 3) AS Extended_Asset_Coverage_Ratio
+        FROM 
+            Balance_Yearly b
+        INNER JOIN 
+            Income_Yearly i
+        ON 
+            b.Symbol = i.Symbol AND 
+            b.fiscalDateEnding = i.fiscalDateEnding
+        INNER JOIN
+            Cashflow_Yearly c
+        ON
+            b.Symbol = c.Symbol AND 
+            b.fiscalDateEnding = c.fiscalDateEnding
+        LEFT JOIN
+            Stocks_Daily sd
+        ON
+            b.Symbol = sd.Symbol AND 
+            sd.date = (
+                SELECT MIN(sd2.date)
+                FROM Stocks_Daily sd2
+                WHERE sd2.Symbol = b.Symbol
+                AND sd2.date >= b.fiscalDateEnding
+            )
+            
+        WHERE 
+            b.totalAssets IS NOT NULL AND 
+            b.commonstockSharesOutstanding IS NOT NULL AND
+            b.totalCurrentLiabilities IS NOT NULL AND
+            i.costofGoodsAndServicesSold IS NOT NULL AND
+            b.totalShareholderEquity IS NOT NULL;
+    ''')
 
-        # Daten einfügen
-        cursor.execute('''
-            INSERT OR REPLACE INTO 
-                Analysis_Yearly (
-                    Symbol,
-                    fiscalDateEnding, 
-                    Gross_Profit_Margin,
-                    Operating_Profit_Margin,
-                    Net_Profit_Margin,
-                    Return_on_Assets,
-                    Return_on_Equity,
-                    Return_on_Investment,
-                    Equity_Ratio, 
-                    Debt_Ratio,
-                    Interest_Coverage_Ratio,
-                    Debt_Service_Coverage_Ratio,
-                    Leverage_Ratio,
-                    Debt_to_Capital_Ratio,
-                    Current_Ratio,
-                    Quick_Ratio,
-                    Debt_to_Equity_Ratio,  
-                    Working_Capital,
-                    Working_Capital_Ratio,
-                    Net_Working_Capital_Ratio,
-                    Days_Inventory_Outstanding,
-                    Days_Sales_Outstanding,
-                    Days_Payable_Outstanding,
-                    Cash_Conversion_Cycle,
-                    Cash_Ratio,
-                    Operating_Cashflow_Ratio,
-                    Asset_Turnover,
-                    Equity_to_fixed_Assets_Ratio,
-                    Extended_Coverage_Ratio,
-                    Extended_Asset_Coverage_Ratio 
-                )
-            SELECT
-                b.Symbol,
-                b.fiscalDateEnding,
-                ROUND((i.grossProfit * 1.00) / i.totalRevenue, 3) AS Gross_Profit_Margin,
-                ROUND((i.operatingIncome * 1.00) / i.totalRevenue, 3) AS Operating_Profit_Margin,
-                ROUND((i.netIncome * 1.00) / i.totalRevenue, 3) AS Net_Profit_Margin,
-                ROUND((i.netIncome * 1.00) / b.totalAssets, 3) AS Return_on_Assets,
-                ROUND((i.netIncome * 1.00) / b.totalShareholderEquity, 3) AS Return_on_Equity,
-                ROUND((i.netIncome * 1.00) / (b.totalAssets - b.totalLiabilities), 3) AS Return_on_Investment,
-                       
-                ROUND((b.totalShareholderEquity * 1.00) / b.totalAssets, 3) AS Equity_Ratio,
-                ROUND((b.totalLiabilities * 1.00) / b.totalAssets, 3) AS Debt_Ratio,
-                ROUND((i.operatingIncome * 1.00) / i.interestExpense, 3) AS Interest_Coverage_Ratio,
-                ROUND((i.operatingIncome * 1.00) / i.interestAndDebtExpense, 3) AS Debt_Service_Coverage_Ratio,
-                ROUND(b.totalLiabilities * 1.00 / b.totalShareholderEquity, 3) AS Leverage_Ratio,
-                ROUND(b.totalLiabilities * 1.00 / (b.totalLiabilities + b.totalShareholderEquity), 3) AS Debt_to_Capital_Ratio,
-                ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Current_Ratio,
-                ROUND(((b.totalCurrentAssets - b.inventory) * 1.00) / b.totalCurrentLiabilities, 3) AS Quick_Ratio,
-                ROUND((b.totalLiabilities * 1.00) / b.totalShareholderEquity, 3) AS Debt_to_Equity_Ratio,
-                (b.totalCurrentAssets - b.totalCurrentLiabilities) AS Working_Capital,
-                ROUND((b.totalCurrentAssets * 1.00) / b.totalCurrentLiabilities, 3) AS Working_Capital_Ratio,
-                ROUND(((b.totalCurrentAssets - b.totalCurrentLiabilities) * 1.00) / b.totalCurrentLiabilities, 3) AS Net_Working_Capital_Ratio,
-                ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Inventory_Outstanding,
-                ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) AS Days_Sales_Outstanding,
-                ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) AS Days_Payable_Outstanding,
-                (ROUND(((b.inventory * 1.00) / i.costofGoodsAndServicesSold) * 365, 3) + ROUND(((b.currentNetReceivables * 1.00) / i.totalRevenue) * 365, 3) - ROUND(((b.currentAccountsPayable * 1.00) / i.costofGoodsAndServicesSold) * 365, 3)) AS Cash_Conversion_Cycle,
-                ROUND((b.cashAndShortTermInvestments * 1.00) / b.totalCurrentLiabilities, 3) AS Cash_Ratio,
-                ROUND((c.operatingCashflow * 1.00) / b.totalCurrentLiabilities, 3) AS Operating_Cashflow_Ratio,
-                ROUND((i.totalRevenue * 1.00) / b.totalAssets, 3) AS Asset_Turnover,
-                ROUND((b.totalShareholderEquity * 1.00) / b.totalNonCurrentAssets, 3) AS Equity_to_fixed_Assets_Ratio,
-                ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalNonCurrentAssets, 3) AS Extended_Coverage_Ratio,
-                ROUND((b.totalShareholderEquity + b.longTermDebt) * 1.00 / b.totalAssets, 3) AS Extended_Asset_Coverage_Ratio
-            FROM 
-                Balance_Yearly b
-            INNER JOIN 
-                Income_Yearly i
-            ON 
-                b.Symbol = i.Symbol AND b.fiscalDateEnding = i.fiscalDateEnding
-            INNER JOIN
-                Cashflow_Yearly c
-            ON
-                b.Symbol = c.Symbol AND b.fiscalDateEnding = c.fiscalDateEnding 
-            WHERE 
-                b.totalAssets IS NOT NULL AND 
-                b.totalCurrentLiabilities IS NOT NULL AND
-                i.costofGoodsAndServicesSold IS NOT NULL AND
-                b.totalShareholderEquity IS NOT NULL;
-        ''')
-
-        conn.commit()
-        print("Analysis_Yearly Tabelle erfolgreich erstellt und Daten eingefügt.")
-    except Exception as e:
-        print(f"Fehler bei der Erstellung der Tabelle: {e}")
-    finally:
-        conn.close()
+    conn.commit()
+    conn.close()
 
     
 def createAnalysisQuarterlyTable():
