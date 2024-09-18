@@ -229,9 +229,19 @@ def insertFirstRowColumnNamesStockDaily():
     # Convert index to a column to preserve the datetime of the actual stock value
     firstRowData.reset_index(inplace=True)
 
-    # Rename the column to Date
-    firstRowData.rename(columns={'index':'Date'}, inplace=True)
-    firstRowData["date"] = firstRowData["date"].dt.date
+    # Rename columns that start with numbers (e.g., '4. close' -> 'Close')
+    column_rename_mapping = {
+        'index': 'Date',
+        '1. open': 'Open',
+        '2. high': 'High',
+        '3. low': 'Low',
+        '4. close': 'Close',
+        '5. volume': 'Volume'
+    }
+    firstRowData.rename(columns=column_rename_mapping, inplace=True)
+    
+    # Konvertieren der 'Datetime'-Spalte in 'Date', um nur das Datum zu erhalten
+    firstRowData['date'] = pd.to_datetime(firstRowData['date']).dt.date   
 
     firstRowData.insert(0, "Symbol", stock)
 
@@ -413,7 +423,7 @@ def createAnalysisYearlyTable():
             b.Symbol,
             b.fiscalDateEnding,
             ROUND((i.netIncome * 1.00) / b.commonstockSharesOutstanding, 3) AS Earnings_Per_Share,
-            ROUND((stockPrice * 1.00) / ((i.netIncome * 1.00) / b.commonstockSharesOutstanding), 3) AS Price_to_Earnings_Ratio,
+            ROUND((sd.close * 1.00) / ((i.netIncome * 1.00) / b.commonstockSharesOutstanding), 3) AS Price_to_Earnings_Ratio,
             ROUND((c.dividendPayout * 1.00) / sd.close, 3) AS Dividend_Yield,
                    
             ROUND((i.grossProfit * 1.00) / i.totalRevenue, 3) AS Gross_Profit_Margin,
@@ -472,7 +482,8 @@ def createAnalysisYearlyTable():
             )
             
         WHERE 
-            b.totalAssets IS NOT NULL AND 
+            b.totalAssets IS NOT NULL AND
+            sd.close IS NOT NULL AND
             b.commonstockSharesOutstanding IS NOT NULL AND
             b.totalCurrentLiabilities IS NOT NULL AND
             i.costofGoodsAndServicesSold IS NOT NULL AND
@@ -844,34 +855,48 @@ def getTimeSeriesData(updateNotExistingSymbols):
 
     for stock in updateNotExistingSymbols:
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            # Abruf der täglichen Zeitreihe
             dailySeriesPerStock = TimeSeriesPull.get_daily(stock, outputsize="full")[0]
-            #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
-            dailySeriesPerStock["Downloaded_at_datetime"] = timestampToday()
-            dailySeriesPerStock["Downloaded_at_quarter"] = timestampQuarter()
-            
-            # Check and if not Dataframe datatype, convert to Dataframe
+
+            # Sicherstellen, dass es sich um ein DataFrame handelt
             if not isinstance(dailySeriesPerStock, pd.DataFrame):
                 dailySeriesPerStock = pd.DataFrame(dailySeriesPerStock)
-            
-            # Convert index to a column to preserve the datetime of the actual stock value
+
+            # Datum vom Index in eine Spalte umwandeln
             dailySeriesPerStock.reset_index(inplace=True)
 
-            # Rename the column to Date
-            dailySeriesPerStock.rename(columns={'index':'Date'}, inplace=True)
-            dailySeriesPerStock["date"] = dailySeriesPerStock["date"].dt.date
+            # Hinzufügen von Zeitstempeln für den Download
+            dailySeriesPerStock["Downloaded_at_datetime"] = timestampToday()
+            dailySeriesPerStock["Downloaded_at_quarter"] = timestampQuarter()
+                   
+            # Umbenennen der Spalten, die mit Zahlen beginnen, und 'Datetime' in 'Date' umwandeln
+            column_rename_mapping = {
+                'index': 'Date',
+                '1. open': 'Open',
+                '2. high': 'High',
+                '3. low': 'Low',
+                '4. close': 'Close',
+                '5. volume': 'Volume'
+            }
+            dailySeriesPerStock.rename(columns=column_rename_mapping, inplace=True)
 
+            # Umwandlung von 'Date' in reines Datum (ohne Zeitstempel)
+            dailySeriesPerStock["date"] = pd.to_datetime(dailySeriesPerStock["date"]).dt.date
+
+            # Einfügen des Symbols in die erste Spalte
             dailySeriesPerStock.insert(0, "Symbol", stock)
 
+            # Zusammenführen mit dem allStockTimeSeries DataFrame
             allStockTimeSeries = pd.concat([allStockTimeSeries, dailySeriesPerStock], ignore_index=True)
+
+            # API-Abfrage-Verzögerung
             APIRequestDelay()
-        
+
         except ValueError:
             stocksNotExisting.append(stock)
-            print("Error" + str(counter) + " " + str(stock))
-            counter = counter + 1
+            print(f"Error {counter}: {stock}")
+            counter += 1
             pass
-        
 
     return allStockTimeSeries, stocksNotExisting  
 
@@ -1001,55 +1026,3 @@ def deleteNoneUpdatableSymbols(symbol_list, stocksNotExisting):
     excelDataFrame.to_excel(filename, sheet_name=sheetname, index=False, header=False)
 
 
-
-
-
-
-
-"""
-
-def calc_price_per_share():
-    book = load_workbook("output.xlsx")
-    book_overview = book["Overview"]
-    book_balance_quarterly = book["Balance_Quarterly"]
-    book_income_quarterly = book["Income_Quarterly"]
-    book_stock_price = book["Daily_Stock_Price"]
-
-    data_balance = book_balance.values
-    data_income = book_income.values
-    data_stock_price = book_stock_price.values
-
-
-    header_bal = next(data_balance)
-    header_inc = next(data_income)
-    header_pri = next(data_stock_price)
-
-    table_bal = pd.DataFrame(data_balance,columns=header_bal, dtype="int64")
-    table_bal["commonStockSharesOutstanding"][table_bal["commonStockSharesOutstanding"]=="None"] = 1
-    table_inc = pd.DataFrame(data_income,columns=header_inc, dtype="int64")
-    table_inc["netIncome"][table_inc["netIncome"]=="None"] = 1
-    table_pri = pd.DataFrame(data_stock_price,columns=header_pri, dtype="int64")
-
-    table_pri = table_pri[["Symbol","Price"]]
-    table_pri = table_pri.dropna()
-    amount_stocks = table_bal["commonStockSharesOutstanding"]
-    net_income = table_inc["netIncome"]
-
-    amount_stocks = prep_df_for_calc(amount_stocks)
-    net_income = prep_df_for_calc(net_income)
-
-    multipliers = pd.DataFrame(columns=["Symbol", "fiscalDateEnding","EarningsPerShare","SharePrice"])
-    multipliers["EarningsPerShare"] = net_income/amount_stocks*4
-    multipliers["Symbol"] = table_inc["Symbol"]
-    multipliers["fiscalDateEnding"] = table_inc["fiscalDateEnding"]
-
-    for pos,elem in enumerate(multipliers["Symbol"]):
-        for pri_elem in table_pri["Symbol"]:
-            if elem == pri_elem:
-                multipliers["SharePrice"][pos] = table_pri["Price"][table_pri["Symbol"]==elem].values[0]
-    
-    return multipliers
-"""
-
-
-   

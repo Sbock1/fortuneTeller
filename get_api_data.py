@@ -204,6 +204,7 @@ def load_daily_stock(amount):
     stockBalanceData, stocksNotExisting = gil.getTimeSeriesData(updateNotExistingSymbols[0:amount])
     print(f"Step 3: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
     gil.writeToExcel(stockBalanceData, "Stocks_Daily")
+    #gil.writeToDataBase(stockBalanceData, "Stocks_Daily")
     #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
@@ -222,7 +223,7 @@ def loadDailyStockDatabase(amount):
 
 
 
-   
+#gil.insertFirstRowColumnNamesStockDaily()
 #loadOverviewExcel(2)
 #loadOverviewDatabase(1)   
 #load_balance_quartely(1)
@@ -236,8 +237,8 @@ def loadDailyStockDatabase(amount):
 #load_cashflow_annual(1)
 #loadCashflowAnuallyDatabase(2)
 #load_daily_stock(1)
-#loadDailyStockDatabase(6)
-gil.createAnalysisYearlyTable()
+loadDailyStockDatabase(2)
+#gil.createAnalysisYearlyTable()
 #gil.createAnalysisQuarterlyTable()
 sortAllTables()
 '''
