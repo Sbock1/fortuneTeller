@@ -225,7 +225,7 @@ def loadDailyStockDatabase(amount):
 
 #gil.insertFirstRowColumnNamesStockDaily()
 #loadOverviewExcel(2)
-#loadOverviewDatabase(1)   
+loadOverviewDatabase(5)   
 #load_balance_quartely(1)
 #loadBalanceQuarterlyDatabase(2)
 #load_balance_annual(1)
@@ -237,7 +237,7 @@ def loadDailyStockDatabase(amount):
 #load_cashflow_annual(1)
 #loadCashflowAnuallyDatabase(2)
 #load_daily_stock(1)
-loadDailyStockDatabase(2)
+#loadDailyStockDatabase(5)
 #gil.createAnalysisYearlyTable()
 #gil.createAnalysisQuarterlyTable()
 sortAllTables()

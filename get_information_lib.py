@@ -343,7 +343,10 @@ def createAnalysisYearlyTable():
             Earnings_Per_Share REAL,
             Price_to_Earnings_Ratio REAL,
             Dividend_Yield REAL,
-                        
+            Market_Cap REAL,
+            Price_to_Book_Ratio REAL,
+            Return_on_Capital_Employed REAL,
+                   
             Gross_Profit_Margin REAL,
             Operating_Profit_Margin REAL,
             Net_Profit_Margin REAL,
@@ -387,7 +390,10 @@ def createAnalysisYearlyTable():
                 Earnings_Per_Share,
                 Price_to_Earnings_Ratio,
                 Dividend_Yield,
-                   
+                Market_Cap,
+                Price_to_Book_Ratio,
+                Return_on_Capital_Employed,
+
                 Gross_Profit_Margin,
                 Operating_Profit_Margin,
                 Net_Profit_Margin,
@@ -423,9 +429,12 @@ def createAnalysisYearlyTable():
             b.Symbol,
             b.fiscalDateEnding,
             ROUND((i.netIncome * 1.00) / b.commonstockSharesOutstanding, 3) AS Earnings_Per_Share,
-            ROUND((sd.close * 1.00) / ((i.netIncome * 1.00) / b.commonstockSharesOutstanding), 3) AS Price_to_Earnings_Ratio,
-            ROUND((c.dividendPayout * 1.00) / sd.close, 3) AS Dividend_Yield,
-                   
+            ROUND((sd.Close * 1.00) / ((i.netIncome * 1.00) / b.commonstockSharesOutstanding), 3) AS Price_to_Earnings_Ratio,
+            ROUND(((c.dividendPayout * 1.00) / b.commonstockSharesOutstanding) / sd.Close, 4) AS Dividend_Yield,
+            ROUND(((sd.Close * 1.00) * b.commonstockSharesOutstanding), 0) AS Market_Cap,
+            ROUND((sd.Close * 1.00) / (b.totalShareholderEquity * 1.00 / b.commonstockSharesOutstanding), 3) AS Price_to_Book_Ratio,
+            ROUND(i.operatingIncome * 1.00 / (b.totalAssets - b.totalCurrentLiabilities), 3) AS Return_on_Capital_Employed,
+                      
             ROUND((i.grossProfit * 1.00) / i.totalRevenue, 3) AS Gross_Profit_Margin,
             ROUND((i.operatingIncome * 1.00) / i.totalRevenue, 3) AS Operating_Profit_Margin,
             ROUND((i.netIncome * 1.00) / i.totalRevenue, 3) AS Net_Profit_Margin,
@@ -901,7 +910,7 @@ def getTimeSeriesData(updateNotExistingSymbols):
     return allStockTimeSeries, stocksNotExisting  
 
 
-"""
+""" TO-DO: Check existing data and expand it
 def refresh(excel_data, refresh_list):
     today = pd.to_datetime(dt.datetime.today())
     today_quarter = int(today.quarter)
@@ -995,22 +1004,6 @@ def sortDatabaseBySymbolName(table):
     conn.close()
 
 
-
-"""
-
-def write_to_excel_daily_stock_price(result):
-    book = load_workbook("output.xlsx")
-    book_stock_price = book["Daily_Stock_Price"]
-
-    writer = pd.ExcelWriter("output.xlsx", engine='openpyxl') 
-
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-  
-    result.to_excel(writer, index=False, header=True, sheet_name="Daily_Stock_Price")
-    writer.save() 
-
-"""
 
 # NOT USED: Implementation as is, leads to deletion of Symbol entries in Stock_symbol_list, because the API request does get canceled from provide due to exhaustion of free API requests per day.
 # TO-DO: When this particular error comes back from server, it is needed to ignore this delete func.
