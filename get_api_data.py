@@ -15,7 +15,6 @@ def initializeExcelSheet():
     gil.deleletExcelPredefinedSheet()
 
 
-
 def sortAllTables():
     
     for table in ["Overview", "Balance_Quarterly", "Balance_Yearly", "Income_Quarterly", "Income_Yearly", "Stocks_Daily", "Cashflow_Yearly"]:
@@ -84,7 +83,7 @@ def load_balance_quartely(amount):
     print(f"Step 2: Follwing symbols exist already {excelSymbolsExisting}")
     stockBalanceData, stocksNotExisting = gil.update_balance_sheet_quarterly(updateNotExistingSymbols[0:amount])
     print(f"Step 3: Creation DataFrame with update of mainExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
-    gil.writeToDataBase(stockBalanceData, "Balance_Quarterly")
+    gil.writeToExcel(stockBalanceData, "Balance_Quarterly")
     #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
@@ -225,9 +224,9 @@ def loadDailyStockDatabase(amount):
 
 #gil.insertFirstRowColumnNamesStockDaily()
 #loadOverviewExcel(2)
-loadOverviewDatabase(5)   
-#load_balance_quartely(1)
-#loadBalanceQuarterlyDatabase(2)
+#loadOverviewDatabase(5)   
+#load_balance_quartely(10)
+#loadBalanceQuarterlyDatabase(10)
 #load_balance_annual(1)
 #loadBalanceAnnuallyDatabase(11)
 #load_income_quartely(1)
@@ -240,7 +239,9 @@ loadOverviewDatabase(5)
 #loadDailyStockDatabase(5)
 #gil.createAnalysisYearlyTable()
 #gil.createAnalysisQuarterlyTable()
+gil.cleaningDatabaseNulltoZero()
 sortAllTables()
+
 '''
 def load_daily_stock_prices():
     stock_list_new = gil.load_stock_symbol_list()

@@ -329,6 +329,8 @@ def deleletExcelPredefinedSheet():
     book.save(excel_path)
 
 
+
+
 ############################# TO-DO-
 def createAnalysisYearlyTable():
     
@@ -522,7 +524,7 @@ def createAnalysisQuarterlyTable():
             PRIMARY KEY (Symbol, fiscalDateEnding)
         );
     ''')
-    # Data calculation from Balance_Yearly
+    # Data calculation 
     cursor.execute('''
         INSERT OR REPLACE INTO 
             Analysis_Quarterly (
@@ -554,6 +556,27 @@ def createAnalysisQuarterlyTable():
     ''')
     conn.commit()
     conn.close()
+
+
+def cleaningDatabaseNulltoZero():
+    conn = sql.connect("mainDatabase.db")
+    cursor = conn.cursor()
+
+    # Request to fetch all columns in the table
+    cursor.execute('''
+        PRAGMA table_info('Analysis_Yearly')
+    ''')
+    columns = cursor.fetchall()
+
+    # Dynamic SQL generation to replace NULL with zero
+    for column in columns:
+        column_name = column[1]
+        cursor.execute(f"UPDATE Analysis_Yearly SET {column_name} = 0 WHERE {column_name} IS NULL;")
+    
+    conn.commit()
+    conn.close()
+
+
 
 
 #############################
