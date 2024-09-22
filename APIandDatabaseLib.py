@@ -379,6 +379,7 @@ def createAnalysisYearlyTable():
     # Create table if NOT existing in Database
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Analysis_Yearly (
+            Symbol_Date TEXT,
             Symbol TEXT,
             fiscalDateEnding DATE,
             Earnings_Per_Share REAL,
@@ -426,6 +427,7 @@ def createAnalysisYearlyTable():
     cursor.execute('''
         INSERT OR REPLACE INTO 
             Analysis_Yearly (
+                Symbol_Date,
                 Symbol,
                 fiscalDateEnding, 
                 Earnings_Per_Share,
@@ -467,6 +469,7 @@ def createAnalysisYearlyTable():
                 Extended_Asset_Coverage_Ratio 
             )
         SELECT
+            b.Symbol || ' ' || b.fiscalDateEnding AS Symbol_Date,
             b.Symbol,
             b.fiscalDateEnding,
             ROUND((i.netIncome * 1.00) / b.commonstockSharesOutstanding, 3) AS Earnings_Per_Share,
@@ -551,6 +554,7 @@ def createAnalysisQuarterlyTable():
     # Create table IF NOT existing already
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Analysis_Quarterly (
+            Symbol_Date TEXT,
             Symbol TEXT,
             fiscalDateEnding DATE,
             Earnings_Per_Share REAL,
@@ -598,6 +602,7 @@ def createAnalysisQuarterlyTable():
     cursor.execute('''
         INSERT OR REPLACE INTO 
             Analysis_Quarterly (
+                Symbol_Date,
                 Symbol,
                 fiscalDateEnding, 
                 Earnings_Per_Share,
@@ -639,6 +644,7 @@ def createAnalysisQuarterlyTable():
                 Extended_Asset_Coverage_Ratio 
             )
         SELECT
+            b.Symbol || ' ' || b.fiscalDateEnding AS Symbol_Date,
             b.Symbol,
             b.fiscalDateEnding,
             ROUND((i.netIncome * 1.00) / b.commonstockSharesOutstanding, 3) AS Earnings_Per_Share,
@@ -726,7 +732,6 @@ def cleaningDatabaseNulltoZero():
     ''')
     tables = [row[0] for row in cursor.fetchall()]
 
-
     for table in tables:
         cursor.execute(f'''
             PRAGMA table_info({table});
@@ -736,13 +741,45 @@ def cleaningDatabaseNulltoZero():
         # Dynamic SQL generation to replace NULL with zero
         for column in columns:
             column_name = column[1]
-            cursor.execute(f"UPDATE {table} SET {column_name} = 0 WHERE {column_name} IS NULL OR {column_name} = "None";")
+            cursor.execute(f"UPDATE {table} SET {column_name} = 0 WHERE {column_name} IS NULL OR {column_name} = 'None';")
         
     conn.commit()
     conn.close()
 
 
+def addingPrimaryKeyColumn():
+    conn = sql.connect("mainDatabase.db")
+    cursor = conn.cursor()
 
+    # Request to fetch all columns in the table
+    cursor.execute('''
+    SELECT name FROM sqlite_master WHERE type='table' AND name != "Overview" AND name != "Analysis_Yearly" AND name != "Analysis_Quarterly";
+    ''')
+    tables = [row[0] for row in cursor.fetchall()]
+    print(tables)
+
+    for table in tables:
+        cursor.execute(f"PRAGMA table_info({table})")
+        columns = cursor.fetchall()
+
+        print(table)
+        print(columns[1][1])
+
+        if "Symbol_Date" not in [column[1] for column in columns]:
+            cursor.execute(f'''
+                ALTER TABLE {table} ADD COLUMN Symbol_Date TEXT;
+            ''')
+        if "fiscalDateEnding" in [column[1] for column in columns]:
+            cursor.execute(f'''
+                UPDATE {table} SET Symbol_Date = Symbol || ' ' || fiscalDateEnding;
+            ''')
+        if "date" in [column[1] for column in columns]:
+            cursor.execute(f'''
+                UPDATE {table} SET Symbol_Date = Symbol || ' ' || date;
+            ''')
+
+    conn.commit()
+    conn.close()
 
 #############################
 
