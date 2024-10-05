@@ -271,6 +271,7 @@ loadIncomeQuarterlyDatabase(3)
 loadCashflowQuarterlyDatabase(3)
 loadDailyStockDatabase(3)
 
+
 gil.createAnalysisQuarterlyTable()
 gil.cleaningDatabaseNulltoZero()
 gil.addingPrimaryKeyColumn()
