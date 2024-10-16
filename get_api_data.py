@@ -2,6 +2,7 @@ import APIandDatabaseLib as gil
 import time
 import tkinter as tk
 from tkinter import messagebox
+import argparse as ap
 
 #ONLY USE if not already initialized "output.xlsx" is present. Otherwise header gets downloaded again -> TO-DO: Change func to check if file and header per worksheet are exisitng
 def initializeExcelSheet():
@@ -54,15 +55,27 @@ def createWindow():
 #createWindow()
 
 
-def loadOverviewExcel(amount: int):
+def loadAndStoreAPIDataPull(amount: int, destination: str, source: str):
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
-    excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", "Overview")
-    print("Step 1: Loading initial data from Excel: ## Overview ## -> Done")
+    if destination == "Excel":
+        excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", source)
+    elif destination == "DB":
+        excelSymbolsExisting, excelQuartersExisting = gil.readFromDataBase(source)
+    print(f"Step 1: Loading initial data from ## {source} ## -> Done")
     existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols = gil.checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQuartersExisting)
     print(f"Step 2: Following symbols exist already {excelSymbolsExisting}")
-    stockOverviewData, stocksNotExisting = gil.updateCompanyOverview(updateNotExistingSymbols[0:amount])
-    print(f"Step 3: Creation DataFrame with update of myExcel with {amount} entries which are {updateNotExistingSymbols[0:amount]}")
-    gil.writeToExcel(stockOverviewData, "Overview")
+
+    if source == "Overview":
+        stockAPIData, stocksNotExisting = gil.updateCompanyOverview(updateNotExistingSymbols[0:amount])
+    elif source == "Balance_Quarterly":
+        stockAPIData, stocksNotExisting = gil.update_balance_sheet_quarterly(updateNotExistingSymbols[0:amount])
+    print(f"Step 3: Creation DataFrame with update of {destination} with {amount} entries which are: {updateNotExistingSymbols[0:amount]}")
+    
+    if destination == "Excel":
+        gil.writeToExcel(stockAPIData, source)
+    elif destination == "DB":
+        gil.writeToDataBase(stockAPIData, source)
+
     #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
 
@@ -260,7 +273,7 @@ def loadDailyStockDatabase(amount: int):
 #loadIncomeAnnuallyDatabase(11)
 #load_cashflow_annual(1)
 #loadCashflowAnuallyDatabase(4)
-#load_cashflow_quarterly(1)
+#load_cashflow_quarterly(1) 
 #load_daily_stock(1)
 
 #gil.createAnalysisYearlyTable()
