@@ -16,12 +16,9 @@ def initializeExcelSheet():
     gil.insertFirstRowColumnNamesCashflowQuarterly()
     gil.deleletExcelPredefinedSheet()
 
-
 def sortAllTables():
-    
     for table in ["Overview", "Balance_Quarterly", "Balance_Yearly", "Income_Quarterly", "Income_Yearly", "Stocks_Daily", "Cashflow_Yearly", "Cashflow_Quarterly"]:
         gil.sortDatabaseBySymbolName(table)
-
 
 def createWindow():
     # Main window
@@ -38,7 +35,7 @@ def createWindow():
     def load_overview_button_clicked():
         try:
             amount = int(entry.get())
-            loadOverviewExcel(amount)
+            loadAndStoreAPIDataPull(amount, "DB", "Overview")
             messagebox.showinfo("Info", f"Overview was expanded by {amount} entries.")
         except ValueError:
             messagebox.showerror("Error", "Please insert a valid int value.")
@@ -70,7 +67,7 @@ def loadAndStoreAPIDataPull(amount, destination: str, source: str):
     elif isinstance(amount, list):
         symbolsToUpdate = [symbol for symbol in updateNotExistingSymbols if symbol in amount] 
     elif isinstance(amount, str):
-        symbolsToUpdate = [amount]
+        symbolsToUpdate = [symbol for symbol in updateNotExistingSymbols if symbol == amount]
     else:
         raise ValueError(f"Invalid input for 'amount' {amount}. Expected int, list, or str.")
 
@@ -90,6 +87,8 @@ def loadAndStoreAPIDataPull(amount, destination: str, source: str):
         stockAPIData, stocksNotExisting = gil.updateCashflowStatementAnually(symbolsToUpdate)      
     elif source == "Stocks_Daily":
         stockAPIData, stocksNotExisting = gil.getTimeSeriesData(symbolsToUpdate)
+    else:
+        raise ValueError(f"Invalid input for 'source' {source}. Expected 'Overview', 'Balance_Quarterly', 'Balance_Yearly', 'Income_Quarterly', 'Income_Yearly', 'Cashflow_Quarterly', 'Cashflow_Yearly', 'Stocks_Daily'.")
 
     print(f"Step 3: Creation DataFrame with update of {destination} with {amount} entries which are: {symbolsToUpdate}")
     
@@ -98,29 +97,20 @@ def loadAndStoreAPIDataPull(amount, destination: str, source: str):
         gil.writeToExcel(stockAPIData, source)
     elif destination == "DB":
         gil.writeToDataBase(stockAPIData, source)
-
     #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
 
-allDataGroup = ["Overview", "Balance_Quarterly", "Balance_Yearly", "Income_Quarterly", "Income_Yearly", "Cashflow_Quarterly", "Cashflow_Yearly", "Stock_Daily"]
-
-for elem in allDataGroup:
-    loadAndStoreAPIDataPull("MSFT", "DB", elem)
-
-gil.createAnalysisQuarterlyTable()
-gil.cleaningDatabaseNulltoZero()
-gil.addingPrimaryKeyColumn()
-sortAllTables()
-
+def loadAllTables(amount):
+    allDataGroup = ["Overview", "Balance_Quarterly", "Balance_Yearly", "Income_Quarterly", "Income_Yearly", "Cashflow_Quarterly", "Cashflow_Yearly", "Stocks_Daily"]
+    
+    for elem in allDataGroup:
+        loadAndStoreAPIDataPull(amount, "DB", elem) 
 '''
-def load_daily_stock_prices():
-    stock_list_new = gil.load_stock_symbol_list()
-    stock_list_con = " ".join(str(elem) for elem in stock_list_new)
-
-    daily_price_stock_list = gil.load_stock_price_yf(stock_list_con)
-    gil.write_to_excel_daily_stock_price(daily_price_stock_list)
-
-
-
+    gil.createAnalysisQuarterlyTable()
+    gil.createAnalysisYearlyTable()
+    gil.cleaningDatabaseNulltoZero()
+    gil.addingPrimaryKeyColumn()
+    sortAllTables()
 '''
+#loadAllTables("AAPL")
 
-#load_daily_stock_prices()
+loadAndStoreAPIDataPull("AAPL", "DB", "Overview")

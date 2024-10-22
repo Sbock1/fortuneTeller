@@ -17,7 +17,7 @@ from sklearn.metrics import mean_squared_error
 ###########################################
 
 ### Load database data for further processing 
-def loadStockDataFromDatabase(stock: chr):
+def loadStockDataFromDatabase(stock: str):
     # Connect to sql database, it is the mainDatabase.db
     conn = sql.connect("mainDatabase.db")
 

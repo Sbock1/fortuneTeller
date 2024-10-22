@@ -376,19 +376,24 @@ def createAnalysisYearlyTable():
     conn = sql.connect("mainDatabase.db")
     cursor = conn.cursor()
 
-    # Create table if NOT existing in Database
+    # Create table IF NOT existing already
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Analysis_Yearly (
             Symbol_Date TEXT,
             Symbol TEXT,
-            fiscalDateEnding DATE,
+            FiscalDateEnding DATE,
+            Net_Income REAL,
+            Operating_Cashflow REAL,
+            Net_Change_in_Cash REAL,
+            Free_Cashflow REAL,
+            Cash_From_Financing REAL,
+            Cash_From_Investing REAL,
             Earnings_Per_Share REAL,
             Price_to_Earnings_Ratio REAL,
             Dividend_Yield REAL,
             Market_Cap REAL,
             Price_to_Book_Ratio REAL,
-            Return_on_Capital_Employed REAL,
-                   
+            Return_on_Capital_Employed REAL,      
             Gross_Profit_Margin REAL,
             Operating_Profit_Margin REAL,
             Net_Profit_Margin REAL,
@@ -429,14 +434,19 @@ def createAnalysisYearlyTable():
             Analysis_Yearly (
                 Symbol_Date,
                 Symbol,
-                fiscalDateEnding, 
+                FiscalDateEnding, 
+                Net_Income,
+                Operating_Cashflow,
+                Net_Change_in_Cash,
+                Free_Cashflow,
+                Cash_From_Financing,
+                Cash_From_Investing,
                 Earnings_Per_Share,
                 Price_to_Earnings_Ratio,
                 Dividend_Yield,
                 Market_Cap,
                 Price_to_Book_Ratio,
                 Return_on_Capital_Employed,
-
                 Gross_Profit_Margin,
                 Operating_Profit_Margin,
                 Net_Profit_Margin,
@@ -472,6 +482,12 @@ def createAnalysisYearlyTable():
             b.Symbol || ' ' || b.fiscalDateEnding AS Symbol_Date,
             b.Symbol,
             b.fiscalDateEnding,
+            ROUND(i.netIncome, 0) AS Net_Income,
+            ROUND(c.operatingCashflow, 0) AS Operating_Cashflow,
+            ROUND((c.operatingCashflow + c.cashflowFromFinancing + c.cashflowFromInvestment), 0) AS Net_change_in_Cash,
+            ROUND((c.operatingCashflow - c.capitalExpenditures), 0) AS Free_Cashflow,
+            ROUND(c.cashflowFromFinancing, 0) AS Cash_From_Financing,
+            ROUND(c.cashflowFromInvestment, 0) AS Cash_From_Investing,
             ROUND((i.netIncome * 1.00) / b.commonstockSharesOutstanding, 3) AS Earnings_Per_Share,
             ROUND((sd.Close * 1.00) / ((i.netIncome * 1.00) / b.commonstockSharesOutstanding), 3) AS Price_to_Earnings_Ratio,
             ROUND(((c.dividendPayout * 1.00) / b.commonstockSharesOutstanding) / sd.Close, 4) AS Dividend_Yield,
@@ -1211,9 +1227,7 @@ def load_stock_price_yf(stock_list_new):
 def writeToExcel(mainExcel, worksheet):
     
     excelPath = "output.xlsx"
-
     book = load_workbook(excelPath)
-
     balanceSheet = book[worksheet]
 
     for row in dataframe_to_rows(mainExcel, index=False, header=False):
@@ -1229,17 +1243,13 @@ def readFromDataBase(database):
 
     try:
         mainSheetDataframe = pd.read_sql(f"SELECT Symbol, Downloaded_at_quarter FROM {database}", conn)
-        
         excelSymbolsExisting = list(set(mainSheetDataframe["Symbol"]))
-        excelQuartersExisting = list(mainSheetDataframe["Downloaded_at_quarter"])
-        
+        excelQuartersExisting = list(mainSheetDataframe["Downloaded_at_quarter"])      
         return excelSymbolsExisting, excelQuartersExisting
 
     except:
-
         excelSymbolsExisting = ["A"]
         excelQuartersExisting = timestampQuarter()
-
         return excelSymbolsExisting, excelQuartersExisting
 
     finally:
@@ -1251,14 +1261,11 @@ def writeToDataBase(mainExcel, database):
     conn = sql.connect("mainDatabase.db")
     mainExcel.to_sql(database, conn, if_exists="append", index=False)
     
-
     conn.close()
-
 
 def sortDatabaseBySymbolName(table):
     
     conn = sql.connect("mainDatabase.db")
-
     cursor = conn.cursor()
 
     # Create temp table differently sorted
@@ -1269,12 +1276,8 @@ def sortDatabaseBySymbolName(table):
     
     cursor.execute(f"ALTER TABLE sorted_{table} RENAME TO {table}")
 
-
     conn.commit()
-
     conn.close()
-
-
 
 # NOT USED: Implementation as is, leads to deletion of Symbol entries in Stock_symbol_list, because the API request does get canceled from provide due to exhaustion of free API requests per day.
 # TO-DO: When this particular error comes back from server, it is needed to ignore this delete func.
