@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Overview</title>
+</head>
+<body>
+    <form action="/filter" method="get">
+        <label for="Symbol">Symbol:</label>
+        <input type="text" id="symbol" name="symbol">
+        <button type="submit">Filter</button>
+    </form>
+
+    <h1>Stock Overview</h1>
+    <table>
+        <tr>
+            <th>Symbol</th>
+            <th>Net Income</th>
+            <th>Free Cashflow</th>
+            <th>Earnings Per Share</th>
+        </tr>
+        {% for stock in stocks %}
+        <tr>
+            <td>{{ stock['Symbol'] }}</td>
+            <td>{{ stock['net_income'] }}</td>
+            <td>{{ stock['free_cashflow'] }}</td>
+            <td>{{ stock['earnings_per_share'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

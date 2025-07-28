@@ -890,7 +890,6 @@ def checkSymbolCurrentQuarterExisting(symbolList, excelSymbolsExisting, excelQua
         return existingSymbols, symbolsNeedRefresh, updateNotExistingSymbols
 
 
-
 def APIRequestDelay():
     time.sleep(time_delay)
 
@@ -959,7 +958,7 @@ def update_balance_sheet_quarterly(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            #the API command retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockBalanceData = FundamentalDataAPIPull.get_balance_sheet_quarterly(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
@@ -992,7 +991,7 @@ def update_balance_sheet_annual(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            #the API command retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockBalanceData = FundamentalDataAPIPull.get_balance_sheet_annual(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
@@ -1024,7 +1023,7 @@ def update_income_statement_quarterly(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            #the API command retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockBalanceData = FundamentalDataAPIPull.get_income_statement_quarterly(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
@@ -1057,7 +1056,7 @@ def update_income_statement_annual(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            #the API command retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockBalanceData = FundamentalDataAPIPull.get_income_statement_annual(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
@@ -1089,7 +1088,7 @@ def updateCashflowStatementAnually(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            #the API command retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockBalanceData = FundamentalDataAPIPull.get_cash_flow_annual(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
@@ -1121,7 +1120,7 @@ def updateCashflowStatementQuarterly(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         
         try:
-            #the API command get_company_overview retrives stock data like Revenue, Cashflow, Ebit, etc. 
+            #the API command retrives stock data like Revenue, Cashflow, Ebit, etc. 
             stockBalanceData = FundamentalDataAPIPull.get_cash_flow_quarterly(stock)[0]
             #The function identifyLastColumnWithContents checks the number of the last column with content in it, then two columns with timestamps are appended
             stockBalanceData["Downloaded_at_datetime"] = timestampToday()
@@ -1214,14 +1213,7 @@ def refresh(excel_data, refresh_list):
     excel_data_refreshed = excel_data
     return excel_data_ref
 
-def load_stock_price_yf(stock_list_new):
-    stock_price_df = yf.download(stock_list_new, period="1d")
-    stock_price_df_t = stock_price_df["Close"].T
-    stock_price_df_t.insert(1, "Date", pd.to_datetime(dt.datetime.today()))
-    stock_price_df_t1 = stock_price_df_t.reset_index()
-    stock_price_df_t1.columns = ["Symbol","Price","Date"]
-    
-    return stock_price_df_t1
+
 """
            
 def writeToExcel(mainExcel, worksheet):

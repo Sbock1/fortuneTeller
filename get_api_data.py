@@ -52,7 +52,11 @@ def createWindow():
 #createWindow()
 
 
-def loadAndStoreAPIDataPull(amount, destination: str, source: str):
+def loadAndStoreAPIDataPull(amount, destination: str, source: str) -> None:
+    # Check if func attributes are valid:  
+    if not (isinstance(amount, int) and amount > 0) and not isinstance(amount, list) and not (isinstance(amount, str) and amount.strip()):
+        raise ValueError(f"Invalid input for 'amount'. Expected int, list, or str.")
+  
     symbolList = gil.loadOneColumnRowDataAsList("Stock_symbols_list.xlsx", "Overview", "A")
     if destination == "Excel":
         excelSymbolsExisting, excelQuartersExisting = gil.getExcelSheetInformation("output.xlsx", source)
@@ -97,20 +101,22 @@ def loadAndStoreAPIDataPull(amount, destination: str, source: str):
         gil.writeToExcel(stockAPIData, source)
     elif destination == "DB":
         gil.writeToDataBase(stockAPIData, source)
-    #gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+    gil.deleteNoneUpdatableSymbols(symbolList, stocksNotExisting)
+
 
 def loadAllTables(amount):
     allDataGroup = ["Overview", "Balance_Quarterly", "Balance_Yearly", "Income_Quarterly", "Income_Yearly", "Cashflow_Quarterly", "Cashflow_Yearly", "Stocks_Daily"]
     
     for elem in allDataGroup:
         loadAndStoreAPIDataPull(amount, "DB", elem) 
-'''
+
     gil.createAnalysisQuarterlyTable()
     gil.createAnalysisYearlyTable()
     gil.cleaningDatabaseNulltoZero()
     gil.addingPrimaryKeyColumn()
     sortAllTables()
-'''
-#loadAllTables("AAPL")
 
-loadAndStoreAPIDataPull("AAPL", "DB", "Overview")
+
+
+
+
