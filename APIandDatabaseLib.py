@@ -1,5 +1,6 @@
-from alpha_vantage.fundamentaldata import FundamentalData
-from alpha_vantage.timeseries import TimeSeries
+from api.connect import FundamentalDataAPIPull, TimeSeriesAPIPull, API_key, 
+APIRequestDelay
+
 import matplotlib.pyplot as plt
 import seaborn as sb
 import pandas as pd
@@ -14,17 +15,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 import tkinter as tk
 import os
 
-################################################################## 
-# Author: Sebastian Bock (Sbock)
-# Global variables based on API requirements
-API_key="HNNMDBOG55BREC5P" #Account API key to validate access
-time_delay = 1 #The free API access only allows 25 requests per day without any delay, but for test
-FundamentalDataAPIPull = FundamentalData(API_key,output_format='pandas')
-TimeSeriesPull = TimeSeries(key=API_key, output_format="pandas")
-# IMPORTANT:
-# The AlphaVantage API documentation can be found here:
-# https://www.alphavantage.co/documentation/
-##################################################################
+
 
 
 ##Update first row -> needs to be called separately, not included yet in general API request download -> TO-DO: Better implementation
@@ -216,7 +207,7 @@ def insertFirstRowColumnNamesIncomeYearly():
 def insertFirstRowColumnNamesStockDaily():
     # Load balance data from Alpha Vantage
     stock = "A"
-    firstRowData = TimeSeriesPull.get_daily(stock, outputsize="full")[0]
+    firstRowData = TimeSeriesAPIPull.get_daily(stock, outputsize="full")[0]
     
     # Adding of additional columns at the end
     firstRowData["Downloaded_at_datetime"] = timestampToday()
@@ -1151,7 +1142,7 @@ def getTimeSeriesData(updateNotExistingSymbols):
     for stock in updateNotExistingSymbols:
         try:
             # Abruf der täglichen Zeitreihe
-            dailySeriesPerStock = TimeSeriesPull.get_daily(stock, outputsize="full")[0]
+            dailySeriesPerStock = TimeSeriesAPIPull.get_daily(stock, outputsize="full")[0]
 
             # Sicherstellen, dass es sich um ein DataFrame handelt
             if not isinstance(dailySeriesPerStock, pd.DataFrame):
